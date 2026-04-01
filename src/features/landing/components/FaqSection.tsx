@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyboardEvent, useState } from "react";
+import { useState } from "react";
 
 import { SectionContainer } from "@/features/landing/components/SectionContainer";
 import { LandingContent } from "@/features/landing/i18n/types";
@@ -16,13 +16,6 @@ export function FaqSection({ content }: FaqSectionProps) {
     setOpenIndex((current) => (current === index ? null : index));
   }
 
-  function handleKeyDown(event: KeyboardEvent<HTMLElement>, index: number) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      toggleItem(index);
-    }
-  }
-
   return (
     <section id="faq" className="bg-surface section-space">
       <SectionContainer>
@@ -33,29 +26,34 @@ export function FaqSection({ content }: FaqSectionProps) {
 
         <div className="mt-8 space-y-3">
           {content.faq.items.map((item, index) => (
-            <article
-              key={item.question}
-              className="card cursor-pointer"
-              role="button"
-              tabIndex={0}
-              aria-expanded={openIndex === index}
-              onClick={() => toggleItem(index)}
-              onKeyDown={(event) => handleKeyDown(event, index)}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold sm:text-base">{item.question}</p>
-                <span
-                  aria-hidden="true"
-                  className={`text-accent flex h-7 w-7 shrink-0 items-center justify-center transition-transform duration-200 ${
-                    openIndex === index ? "rotate-180" : "rotate-0"
-                  }`}
+            <article key={item.question} className="card p-0">
+              <button
+                type="button"
+                className="faq-item-trigger block w-full cursor-pointer rounded-2xl px-5 py-4 text-left"
+                aria-expanded={openIndex === index}
+                aria-controls={`faq-answer-${index}`}
+                onClick={() => toggleItem(index)}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold sm:text-base">{item.question}</p>
+                  <span
+                    aria-hidden="true"
+                    className={`text-accent flex h-7 w-7 shrink-0 items-center justify-center transition-transform duration-200 ${
+                      openIndex === index ? "rotate-180" : "rotate-0"
+                    }`}
+                  >
+                    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                </div>
+                <p
+                  id={`faq-answer-${index}`}
+                  className={`text-muted mt-3 text-sm leading-relaxed ${openIndex === index ? "block" : "hidden"}`}
                 >
-                  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </span>
-              </div>
-              {openIndex === index ? <p className="text-muted mt-3 text-sm leading-relaxed">{item.answer}</p> : null}
+                  {item.answer}
+                </p>
+              </button>
             </article>
           ))}
         </div>

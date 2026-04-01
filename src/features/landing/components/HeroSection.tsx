@@ -7,6 +7,8 @@ type HeroSectionProps = {
 
 export function HeroSection({ content }: HeroSectionProps) {
   const { hero } = content;
+  const primaryIsExternal = hero.primaryAction.href.startsWith("http");
+  const secondaryIsExternal = hero.secondaryAction.href.startsWith("http");
 
   return (
     <section className="bg-hero border-subtle relative flex min-h-screen items-center overflow-hidden border-b py-16 sm:py-24">
@@ -21,10 +23,20 @@ export function HeroSection({ content }: HeroSectionProps) {
           <p className="text-muted mx-auto mt-4 max-w-2xl text-pretty text-base sm:text-lg">{hero.description}</p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <a href={hero.primaryAction.href} className="btn-primary">
+            <a
+              href={hero.primaryAction.href}
+              className="btn-primary"
+              target={primaryIsExternal ? "_blank" : undefined}
+              rel={primaryIsExternal ? "noopener noreferrer" : undefined}
+            >
               {hero.primaryAction.label}
             </a>
-            <a href={hero.secondaryAction.href} className="btn-secondary">
+            <a
+              href={hero.secondaryAction.href}
+              className="btn-secondary"
+              target={secondaryIsExternal ? "_blank" : undefined}
+              rel={secondaryIsExternal ? "noopener noreferrer" : undefined}
+            >
               {hero.secondaryAction.label}
             </a>
           </div>

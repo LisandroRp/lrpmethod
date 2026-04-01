@@ -23,7 +23,7 @@ export function FinalCtaSection({ content }: FinalCtaSectionProps) {
             <a
               href={finalCta.action.href}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="btn-primary mt-6 inline-block"
             >
               {finalCta.action.label}

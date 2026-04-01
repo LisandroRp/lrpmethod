@@ -64,8 +64,8 @@ export function LandingHeader({ content }: LandingHeaderProps) {
 
         <button
           type="button"
-          className="text-primary flex h-10 w-10 items-center justify-center sm:hidden"
-          aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+          className="menu-toggle text-primary flex h-10 w-10 items-center justify-center rounded-md sm:hidden"
+          aria-label={isMobileMenuOpen ? content.nav.closeMenuAriaLabel : content.nav.openMenuAriaLabel}
           aria-expanded={isMobileMenuOpen}
           aria-controls="mobile-nav"
           onClick={() => setIsMobileMenuOpen((prev) => !prev)}

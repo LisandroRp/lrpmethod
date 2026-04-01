@@ -14,11 +14,13 @@ export function PricingSection({ content }: PricingSectionProps) {
           <h2 className="section-title">{content.pricing.title}</h2>
         </div>
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-3 sm:gap-6">
+        <div className="mt-8 grid gap-4 sm:gap-6 md:grid-cols-3">
           {content.pricing.plans.map((plan) => (
             <article key={plan.name} className={plan.highlighted ? "card card-highlight flex h-full flex-col" : "card flex h-full flex-col"}>
-              {plan.highlighted ? <p className="pill mb-3 inline-block self-start">{content.pricing.featuredLabel}</p> : null}
-              <h3 className="text-xl font-semibold">{plan.name}</h3>
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="text-xl font-semibold">{plan.name}</h3>
+                {plan.highlighted ? <p className="pill shrink-0">{content.pricing.featuredLabel}</p> : null}
+              </div>
               <p className="text-muted mt-1 text-sm">{plan.description}</p>
               <p className="mt-4 text-3xl font-bold">
                 {plan.price}

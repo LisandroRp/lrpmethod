@@ -10,7 +10,9 @@ const messages: Record<AppLocale, LandingContent> = {
       howItWorks: "How it works",
       benefits: "Benefits",
       plans: "Plans",
-      faq: "FAQ"
+      faq: "FAQ",
+      openMenuAriaLabel: "Open navigation menu",
+      closeMenuAriaLabel: "Close navigation menu"
     },
     hero: {
       title: "Simple coaching that helps you stay consistent",
@@ -18,7 +20,7 @@ const messages: Record<AppLocale, LandingContent> = {
         "Personalized training plans and practical nutrition guidance through monthly subscriptions.",
       primaryAction: {
         label: "Start on Instagram",
-        href: "#final-cta"
+        href: "https://instagram.com/"
       },
       secondaryAction: {
         label: "See plans",
@@ -159,7 +161,9 @@ const messages: Record<AppLocale, LandingContent> = {
       howItWorks: "Como funciona",
       benefits: "Beneficios",
       plans: "Planes",
-      faq: "FAQ"
+      faq: "FAQ",
+      openMenuAriaLabel: "Abrir menu de navegacion",
+      closeMenuAriaLabel: "Cerrar menu de navegacion"
     },
     hero: {
       title: "Coaching simple para ayudarte a ser constante",
@@ -167,7 +171,7 @@ const messages: Record<AppLocale, LandingContent> = {
         "Planes de entrenamiento personalizados y guia nutricional practica por suscripcion mensual.",
       primaryAction: {
         label: "Empezar por Instagram",
-        href: "#final-cta"
+        href: "https://instagram.com/"
       },
       secondaryAction: {
         label: "Ver planes",

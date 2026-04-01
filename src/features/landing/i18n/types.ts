@@ -25,6 +25,8 @@ export type LandingContent = {
     benefits: string;
     plans: string;
     faq: string;
+    openMenuAriaLabel: string;
+    closeMenuAriaLabel: string;
   };
   hero: {
     title: string;
