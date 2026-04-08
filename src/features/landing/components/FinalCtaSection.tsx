@@ -32,9 +32,6 @@ export function FinalCtaSection({ content }: FinalCtaSectionProps) {
               <a href={contact.emailHref} className="btn-secondary inline-block">
                 {contact.emailLabel}
               </a>
-              <a href={contact.instagramHref} target="_blank" rel="noopener noreferrer" className="btn-secondary inline-block">
-                {contact.instagramLabel}
-              </a>
             </div>
           </div>
         </div>
