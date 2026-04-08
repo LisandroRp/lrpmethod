@@ -169,14 +169,19 @@ a {
 
 .btn-primary:hover,
 .btn-secondary:hover {
-  filter: brightness(1.05);
-  opacity: 0.92;
   transform: translateY(-1px);
+}
+
+.btn-primary:hover {
+  background-color: color-mix(in oklch, var(--color-accent) 84%, var(--color-canvas));
+  filter: brightness(0.92);
 }
 
 .btn-secondary:hover {
   background-color: color-mix(in oklch, var(--color-surface) 72%, transparent);
   border-color: var(--color-accent);
+  filter: brightness(1.05);
+  opacity: 0.92;
 }
 
 .dot-accent {
@@ -212,4 +217,158 @@ a {
 .faq-item-trigger:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+@keyframes heroReveal {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroBackgroundDrift {
+  0% {
+    transform: scale(1.04);
+    opacity: 0.38;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.46;
+  }
+  100% {
+    transform: scale(1.04);
+    opacity: 0.38;
+  }
+}
+
+@keyframes heroTitleShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 180% 50%;
+  }
+}
+
+@keyframes heroTitleGlow {
+  0%,
+  100% {
+    text-shadow:
+      0 0 0 color-mix(in oklch, var(--color-accent) 0%, transparent),
+      0 10px 26px color-mix(in oklch, var(--color-accent) 12%, transparent);
+  }
+  50% {
+    text-shadow:
+      0 0 24px color-mix(in oklch, var(--color-accent) 50%, transparent),
+      0 12px 34px color-mix(in oklch, var(--color-accent) 20%, transparent);
+  }
+}
+
+@keyframes heroTitleFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes ctaPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--color-accent) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 8px color-mix(in oklch, var(--color-accent) 22%, transparent);
+  }
+}
+
+.hero-bg-motion {
+  animation: heroBackgroundDrift 11s ease-in-out infinite;
+}
+
+.hero-reveal {
+  opacity: 0;
+  animation: heroReveal 900ms ease-out forwards;
+}
+
+.hero-reveal-delay-1 {
+  animation-delay: 120ms;
+}
+
+.hero-reveal-delay-2 {
+  animation-delay: 220ms;
+}
+
+.hero-reveal-delay-3 {
+  animation-delay: 320ms;
+}
+
+.hero-title-animated {
+  opacity: 0;
+  animation: heroReveal 900ms ease-out forwards;
+}
+
+.hero-title-inner {
+  display: inline-block;
+  letter-spacing: 0.01em;
+  color: var(--color-primary);
+  background-image: linear-gradient(
+    110deg,
+    var(--color-primary) 15%,
+    color-mix(in oklch, var(--color-accent) 70%, var(--color-primary)) 45%,
+    var(--color-primary) 70%
+  );
+  background-size: 220% auto;
+  background-position: 0% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: heroTitleShimmer 7.2s linear 900ms infinite,
+    heroTitleGlow 3.8s ease-in-out 900ms infinite,
+    heroTitleFloat 4.5s ease-in-out 1100ms infinite;
+}
+
+@supports not ((-webkit-background-clip: text) or (background-clip: text)) {
+  .hero-title-inner {
+    background: none;
+    color: var(--color-primary);
+  }
+}
+
+@supports not (-webkit-text-fill-color: transparent) {
+  .hero-title-inner {
+    color: var(--color-primary);
+  }
+}
+
+.hero-title-inner::selection {
+  -webkit-text-fill-color: var(--color-ink-strong);
+  color: var(--color-ink-strong);
+}
+
+.cta-pulse {
+  animation: ctaPulse 2.8s ease-in-out infinite;
+}
+
+.cta-pulse:hover,
+.cta-pulse:focus-visible {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-bg-motion,
+  .hero-reveal,
+  .hero-title-animated,
+  .hero-title-inner,
+  .cta-pulse {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
 }

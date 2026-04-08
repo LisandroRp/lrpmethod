@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const content = getLandingContent(locale);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const localeTag = locale === "es" ? "es_AR" : "en_US";
-  const ogImage = "/brand/lrp-method-logo.png";
+  const ogImage = "/brand/lrp-method-og-wide.png";
 
   return {
     metadataBase: new URL(siteUrl),
@@ -54,7 +54,7 @@ export async function generateMetadata(): Promise<Metadata> {
           alt: `${content.brand.name} logo`
         },
         {
-          url: "/brand/lrp-mark.png",
+          url: "/brand/lrp-method-og-square.png",
           alt: `${content.brand.name} mark`
         }
       ]
@@ -70,10 +70,36 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getRequestLocale();
+  const content = getLandingContent(locale);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: content.brand.name,
+    url: siteUrl,
+    logo: `${siteUrl}/brand/lrp-method-og-square.png`,
+    email: "contacto@lrpmethod.com",
+    contactPoint: [
+      {
+        "@type": "ContactPoint",
+        contactType: "customer support",
+        email: "contacto@lrpmethod.com"
+      }
+    ],
+    sameAs: ["https://www.instagram.com/lrpmethod/"]
+  };
 
   return (
     <html lang={locale}>
-      <body>{children}</body>
+      <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationSchema)
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

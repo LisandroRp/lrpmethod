@@ -73,6 +73,12 @@ export type LandingContent = {
     disclaimer: string;
     rights: string;
   };
+  contact: {
+    instagramLabel: string;
+    instagramHref: string;
+    emailLabel: string;
+    emailHref: string;
+  };
   seo: {
     title: string;
     description: string;

@@ -20,7 +20,7 @@ const messages: Record<AppLocale, LandingContent> = {
         "Personalized training plans and practical nutrition guidance through monthly subscriptions.",
       primaryAction: {
         label: "Start on Instagram",
-        href: "https://instagram.com/"
+        href: "https://www.instagram.com/lrpmethod/"
       },
       secondaryAction: {
         label: "See plans",
@@ -56,40 +56,38 @@ const messages: Record<AppLocale, LandingContent> = {
       plans: [
         {
           name: "Basic",
-          price: "$29.900",
+          price: "$19.900",
           period: "/month",
-          description: "Ideal to get started.",
+          description: "A simple non-personalized starter plan.",
           features: [
-            "Personalized workout routine",
-            "1 adjustment per month",
-            "Basic WhatsApp follow-up"
+            "Generic training plans for 3, 4, or 5 days",
+            "General diet and nutrition information with practical tips"
           ],
           ctaLabel: "Choose Basic",
           highlighted: false
         },
         {
           name: "Intermediate",
-          price: "$44.900",
+          price: "$33.500",
           period: "/month",
           description: "Best value for steady progress.",
           features: [
             "Personalized workout routine",
-            "Meal plan or nutrition guide",
-            "2 adjustments per month",
-            "WhatsApp follow-up"
+            "Nutrition guide",
+            "2 adjustments per month"
           ],
           ctaLabel: "Choose Intermediate",
           highlighted: true
         },
         {
           name: "Premium",
-          price: "$64.900",
+          price: "$59.970",
           period: "/month",
           description: "Complete support.",
           features: [
             "Personalized workout routine",
             "Nutrition guide",
-            "Weekly adjustments",
+            "2 adjustments per month",
             "Closer WhatsApp follow-up"
           ],
           ctaLabel: "Choose Premium",
@@ -139,7 +137,7 @@ const messages: Record<AppLocale, LandingContent> = {
         "If you want a realistic plan you can follow, this is the next step.",
       action: {
         label: "Message us on Instagram",
-        href: "https://instagram.com/"
+        href: "https://www.instagram.com/lrpmethod/"
       }
     },
     footer: {
@@ -147,9 +145,16 @@ const messages: Record<AppLocale, LandingContent> = {
         "This service provides personalized training and general nutrition guidance only. It does not replace medical advice, diagnosis, treatment, or licensed nutrition counseling.",
       rights: "All rights reserved."
     },
+    contact: {
+      instagramLabel: "Instagram",
+      instagramHref: "https://www.instagram.com/lrpmethod/",
+      emailLabel: "Email",
+      emailHref: "mailto:contacto@lrpmethod.com"
+    },
     seo: {
-      title: "LRP Method | Online Fitness Coaching",
-      description: "Simple MVP landing page for online fitness coaching subscriptions."
+      title: "LRP Method | Online Fitness Coaching & Nutrition Guidance",
+      description:
+        "Personalized online fitness coaching with training plans, nutrition guidance, and monthly follow-up. Choose the plan that fits your goals."
     }
   },
   es: {
@@ -171,7 +176,7 @@ const messages: Record<AppLocale, LandingContent> = {
         "Planes de entrenamiento personalizados y guia nutricional practica por suscripcion mensual.",
       primaryAction: {
         label: "Empezar por Instagram",
-        href: "https://instagram.com/"
+        href: "https://www.instagram.com/lrpmethod/"
       },
       secondaryAction: {
         label: "Ver planes",
@@ -207,40 +212,38 @@ const messages: Record<AppLocale, LandingContent> = {
       plans: [
         {
           name: "Basico",
-          price: "$29.900",
+          price: "$19.900",
           period: "/mes",
-          description: "Ideal para empezar.",
+          description: "Plan inicial simple y no personalizado.",
           features: [
-            "Rutina personalizada",
-            "1 ajuste por mes",
-            "Seguimiento basico por WhatsApp"
+            "Planes genericos de entrenamiento de 3, 4 o 5 dias",
+            "Dieta general e informacion nutricional con tips practicos"
           ],
           ctaLabel: "Elegir Basico",
           highlighted: false
         },
         {
           name: "Intermedio",
-          price: "$44.900",
+          price: "$33.500",
           period: "/mes",
           description: "La mejor relacion precio-resultado.",
           features: [
             "Rutina personalizada",
-            "Plan de comidas o guia de alimentacion",
-            "2 ajustes mensuales",
-            "Seguimiento por WhatsApp"
+            "Guia de alimentacion",
+            "2 ajustes mensuales"
           ],
           ctaLabel: "Elegir Intermedio",
           highlighted: true
         },
         {
           name: "Premium",
-          price: "$64.900",
+          price: "$59.970",
           period: "/mes",
           description: "Acompanamiento completo.",
           features: [
             "Rutina personalizada",
             "Guia de alimentacion",
-            "Ajustes semanales",
+            "2 ajustes mensuales",
             "Seguimiento mas cercano por WhatsApp"
           ],
           ctaLabel: "Elegir Premium",
@@ -290,7 +293,7 @@ const messages: Record<AppLocale, LandingContent> = {
         "Si quieres un plan realista que puedas sostener, este es el siguiente paso.",
       action: {
         label: "Escribenos por Instagram",
-        href: "https://instagram.com/"
+        href: "https://www.instagram.com/lrpmethod/"
       }
     },
     footer: {
@@ -298,9 +301,16 @@ const messages: Record<AppLocale, LandingContent> = {
         "Este servicio brinda entrenamiento personalizado y guia nutricional general. No reemplaza consejo medico, diagnostico, tratamiento ni asesoramiento nutricional licenciado.",
       rights: "Todos los derechos reservados."
     },
+    contact: {
+      instagramLabel: "Instagram",
+      instagramHref: "https://www.instagram.com/lrpmethod/",
+      emailLabel: "Email",
+      emailHref: "mailto:contacto@lrpmethod.com"
+    },
     seo: {
-      title: "LRP Method | Coaching Fitness Online",
-      description: "Landing MVP simple para validar un servicio de coaching fitness online por suscripcion."
+      title: "LRP Method | Coaching Fitness Online y Guia de Alimentacion",
+      description:
+        "Coaching fitness online con planes de entrenamiento, guia de alimentacion y seguimiento mensual. Elige el plan que mejor se adapta a tu objetivo."
     }
   }
 };
