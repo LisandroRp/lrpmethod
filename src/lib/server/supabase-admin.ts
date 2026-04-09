@@ -65,3 +65,19 @@ export async function findProfileIdByEmail(email: string): Promise<string | null
 
   return rows[0].id;
 }
+
+export async function findCurrentActiveSubscriptionByUserId(userId: string) {
+  const path = `subscriptions?select=id,plan_code,status&user_id=eq.${encodeURIComponent(userId)}&status=eq.active&order=created_at.desc&limit=1`;
+  const response = await supabaseFetch(path, { method: "GET" });
+  const rows = (await response.json()) as Array<{
+    id: number;
+    plan_code: "basic" | "intermediate" | "premium";
+    status: "active";
+  }>;
+
+  if (!rows.length) {
+    return null;
+  }
+
+  return rows[0];
+}

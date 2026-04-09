@@ -6,6 +6,7 @@ export type ActionLink = {
 };
 
 export type PlanTier = {
+  code: "basic" | "intermediate" | "premium";
   name: string;
   price: string;
   period: string;
@@ -25,6 +26,8 @@ export type LandingContent = {
     benefits: string;
     plans: string;
     faq: string;
+    login: string;
+    logout: string;
     openMenuAriaLabel: string;
     closeMenuAriaLabel: string;
   };
@@ -87,6 +90,28 @@ export type LandingContent = {
     pageDescription: string;
     embedUrl: string;
     openInNewTabLabel: string;
+    pendingApprovalTitle: string;
+    pendingApprovalDescription: string;
+    pendingApprovalCtaLabel: string;
+  };
+  auth: {
+    modalTitle: string;
+    modalSubtitle: string;
+    nameLabel: string;
+    emailLabel: string;
+    passwordLabel: string;
+    loginCta: string;
+    signupCta: string;
+    switchToSignup: string;
+    switchToLogin: string;
+    closeLabel: string;
+    requiredForCheckoutMessage: string;
+    verifyEmailMessage: string;
+    emailNotConfirmedMessage: string;
+    genericError: string;
+    accountLabel: string;
+    planLabel: string;
+    noPlanLabel: string;
   };
   seo: {
     title: string;

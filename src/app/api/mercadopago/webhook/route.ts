@@ -155,3 +155,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }
+
+export async function GET() {
+  return NextResponse.json({ ok: true, message: "Mercado Pago webhook endpoint online" });
+}

@@ -11,6 +11,8 @@ const messages: Record<AppLocale, LandingContent> = {
       benefits: "Benefits",
       plans: "Plans",
       faq: "FAQ",
+      login: "Log in",
+      logout: "Log out",
       openMenuAriaLabel: "Open navigation menu",
       closeMenuAriaLabel: "Close navigation menu"
     },
@@ -55,6 +57,7 @@ const messages: Record<AppLocale, LandingContent> = {
       featuredLabel: "Most selected",
       plans: [
         {
+          code: "basic",
           name: "Basic",
           price: "$19.900",
           period: "/month",
@@ -67,6 +70,7 @@ const messages: Record<AppLocale, LandingContent> = {
           highlighted: false
         },
         {
+          code: "intermediate",
           name: "Intermediate",
           price: "$33.500",
           period: "/month",
@@ -80,6 +84,7 @@ const messages: Record<AppLocale, LandingContent> = {
           highlighted: true
         },
         {
+          code: "premium",
           name: "Premium",
           price: "$59.970",
           period: "/month",
@@ -159,7 +164,30 @@ const messages: Record<AppLocale, LandingContent> = {
       pageDescription: "Fill in your profile and context so we can prepare your coaching plan.",
       embedUrl:
         "https://tally.so/embed/VLMQYl?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1",
-      openInNewTabLabel: "Open form in a new tab"
+      openInNewTabLabel: "Open form in a new tab",
+      pendingApprovalTitle: "Payment verification in progress",
+      pendingApprovalDescription:
+        "As soon as your payment is confirmed, your onboarding form will be unlocked automatically.",
+      pendingApprovalCtaLabel: "Refresh status"
+    },
+    auth: {
+      modalTitle: "Access your account",
+      modalSubtitle: "Log in before continuing to payment.",
+      nameLabel: "Full name",
+      emailLabel: "Email",
+      passwordLabel: "Password",
+      loginCta: "Log in",
+      signupCta: "Create account",
+      switchToSignup: "Need an account? Create one",
+      switchToLogin: "Already have an account? Log in",
+      closeLabel: "Close",
+      requiredForCheckoutMessage: "You need to log in before paying for this plan.",
+      verifyEmailMessage: "Account created. Check your email to verify and then log in.",
+      emailNotConfirmedMessage: "Please confirm your email first. Check your inbox and then try again.",
+      genericError: "Something went wrong. Please try again.",
+      accountLabel: "Account",
+      planLabel: "Plan",
+      noPlanLabel: "No active plan"
     },
     seo: {
       title: "LRP Method | Online Fitness Coaching & Nutrition Guidance",
@@ -177,6 +205,8 @@ const messages: Record<AppLocale, LandingContent> = {
       benefits: "Beneficios",
       plans: "Planes",
       faq: "FAQ",
+      login: "Ingresar",
+      logout: "Salir",
       openMenuAriaLabel: "Abrir menu de navegacion",
       closeMenuAriaLabel: "Cerrar menu de navegacion"
     },
@@ -206,7 +236,7 @@ const messages: Record<AppLocale, LandingContent> = {
         {
           title: "Completa tu perfil",
           description:
-            "Despues de suscribirte, compartes medidas, fotos, objetivos, disponibilidad, experiencia y limitaciones."
+            "Despues de suscribirte, completas un breve formulario con tus medidas, fotos, objetivos, horarios, experiencia y posibles limitaciones."
         },
         {
           title: "Recibe tu plan personalizado",
@@ -221,6 +251,7 @@ const messages: Record<AppLocale, LandingContent> = {
       featuredLabel: "El mas elegido",
       plans: [
         {
+          code: "basic",
           name: "Basico",
           price: "$19.900",
           period: "/mes",
@@ -233,6 +264,7 @@ const messages: Record<AppLocale, LandingContent> = {
           highlighted: false
         },
         {
+          code: "intermediate",
           name: "Intermedio",
           price: "$33.500",
           period: "/mes",
@@ -246,6 +278,7 @@ const messages: Record<AppLocale, LandingContent> = {
           highlighted: true
         },
         {
+          code: "premium",
           name: "Premium",
           price: "$59.970",
           period: "/mes",
@@ -325,7 +358,30 @@ const messages: Record<AppLocale, LandingContent> = {
       pageDescription: "Completa tu perfil y contexto para preparar tu plan de coaching.",
       embedUrl:
         "https://tally.so/embed/VLMQYl?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1",
-      openInNewTabLabel: "Abrir formulario en una nueva pestana"
+      openInNewTabLabel: "Abrir formulario en una nueva pestana",
+      pendingApprovalTitle: "Estamos verificando tu pago",
+      pendingApprovalDescription:
+        "Apenas se confirme tu pago, se habilita automaticamente el formulario de onboarding.",
+      pendingApprovalCtaLabel: "Actualizar estado"
+    },
+    auth: {
+      modalTitle: "Accede a tu cuenta",
+      modalSubtitle: "Inicia sesion antes de continuar al pago.",
+      nameLabel: "Nombre completo",
+      emailLabel: "Email",
+      passwordLabel: "Contraseña",
+      loginCta: "Ingresar",
+      signupCta: "Crear cuenta",
+      switchToSignup: "No tienes cuenta? Crea una",
+      switchToLogin: "Ya tienes cuenta? Ingresa",
+      closeLabel: "Cerrar",
+      requiredForCheckoutMessage: "Necesitas iniciar sesion antes de pagar este plan.",
+      verifyEmailMessage: "Cuenta creada. Revisa tu email para verificar y luego inicia sesion.",
+      emailNotConfirmedMessage: "Primero confirma tu email. Revisa tu bandeja y vuelve a intentar.",
+      genericError: "Algo salio mal. Intentalo de nuevo.",
+      accountLabel: "Cuenta",
+      planLabel: "Plan",
+      noPlanLabel: "Sin plan activo"
     },
     seo: {
       title: "LRP Method | Coaching Fitness Online y Guia de Alimentacion",

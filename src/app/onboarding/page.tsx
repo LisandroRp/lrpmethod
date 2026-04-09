@@ -1,12 +1,35 @@
 import Image from "next/image";
+import { redirect } from "next/navigation";
 
 import { getLandingContent } from "@/features/landing/i18n/messages";
+import { findCurrentActiveSubscriptionByUserId } from "@/lib/server/supabase-admin";
+import { getCurrentAuthenticatedUser } from "@/lib/server/supabase-auth";
 import { getRequestLocale } from "@/lib/i18n/get-request-locale";
 
 export default async function OnboardingPage() {
   const locale = await getRequestLocale();
   const content = getLandingContent(locale);
   const { onboarding } = content;
+  const user = await getCurrentAuthenticatedUser();
+
+  if (!user) {
+    redirect("/?auth=1");
+  }
+
+  const activeSubscription = await findCurrentActiveSubscriptionByUserId(user.id);
+  if (!activeSubscription) {
+    return (
+      <main className="bg-canvas text-primary flex min-h-screen items-center justify-center px-4 py-8 sm:px-6">
+        <div className="card max-w-xl text-center">
+          <h1 className="section-title">{onboarding.pendingApprovalTitle}</h1>
+          <p className="text-muted mt-3 text-sm sm:text-base">{onboarding.pendingApprovalDescription}</p>
+          <a href="/onboarding" className="btn-primary mt-6 inline-block">
+            {onboarding.pendingApprovalCtaLabel}
+          </a>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="bg-canvas text-primary h-screen overflow-hidden px-4 pt-8 pb-4 sm:px-6 sm:pt-10 lg:px-8">
