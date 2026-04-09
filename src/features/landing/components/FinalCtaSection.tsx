@@ -6,7 +6,7 @@ type FinalCtaSectionProps = {
 };
 
 export function FinalCtaSection({ content }: FinalCtaSectionProps) {
-  const { finalCta, contact } = content;
+  const { finalCta, contact, onboarding } = content;
 
   return (
     <section id="final-cta" className="p-5 sm:p-[55px]">
@@ -29,6 +29,9 @@ export function FinalCtaSection({ content }: FinalCtaSectionProps) {
               {finalCta.action.label}
             </a>
             <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-sm">
+              <a href="/onboarding" className="btn-secondary inline-block">
+                {onboarding.ctaLabel}
+              </a>
               <a href={contact.emailHref} className="btn-secondary inline-block">
                 {contact.emailLabel}
               </a>

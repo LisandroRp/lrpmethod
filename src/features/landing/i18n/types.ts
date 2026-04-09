@@ -79,6 +79,15 @@ export type LandingContent = {
     emailLabel: string;
     emailHref: string;
   };
+  onboarding: {
+    title: string;
+    description: string;
+    ctaLabel: string;
+    pageTitle: string;
+    pageDescription: string;
+    embedUrl: string;
+    openInNewTabLabel: string;
+  };
   seo: {
     title: string;
     description: string;

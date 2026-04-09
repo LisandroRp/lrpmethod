@@ -151,6 +151,16 @@ const messages: Record<AppLocale, LandingContent> = {
       emailLabel: "Email",
       emailHref: "mailto:contacto@lrpmethod.com"
     },
+    onboarding: {
+      title: "Initial Assessment Form",
+      description: "Complete your data so we can build your training and nutrition plan.",
+      ctaLabel: "Complete onboarding form",
+      pageTitle: "LRP Method Initial Assessment",
+      pageDescription: "Fill in your profile and context so we can prepare your coaching plan.",
+      embedUrl:
+        "https://tally.so/embed/VLMQYl?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1",
+      openInNewTabLabel: "Open form in a new tab"
+    },
     seo: {
       title: "LRP Method | Online Fitness Coaching & Nutrition Guidance",
       description:
@@ -306,6 +316,16 @@ const messages: Record<AppLocale, LandingContent> = {
       instagramHref: "https://www.instagram.com/lrpmethod/",
       emailLabel: "Email",
       emailHref: "mailto:contacto@lrpmethod.com"
+    },
+    onboarding: {
+      title: "Formulario de Evaluacion Inicial",
+      description: "Completa tus datos para que armemos tu plan de entrenamiento y alimentacion.",
+      ctaLabel: "Completar formulario de onboarding",
+      pageTitle: "Evaluacion Inicial LRP Method",
+      pageDescription: "Completa tu perfil y contexto para preparar tu plan de coaching.",
+      embedUrl:
+        "https://tally.so/embed/VLMQYl?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1",
+      openInNewTabLabel: "Abrir formulario en una nueva pestana"
     },
     seo: {
       title: "LRP Method | Coaching Fitness Online y Guia de Alimentacion",
