@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { MouseEvent, useEffect, useMemo, useState } from "react";
+import { MouseEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import { LoadingButton } from "@/components/composed/LoadingButton";
 import { AuthModal } from "@/features/landing/components/AuthModal";
@@ -51,6 +51,8 @@ export function LandingHeader({ content }: LandingHeaderProps) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isAccountLoading, setIsAccountLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isCancellingPlan, setIsCancellingPlan] = useState(false);
+  const [cancelErrorMessage, setCancelErrorMessage] = useState<string | null>(null);
   const [account, setAccount] = useState<AccountResponse["user"] | null>(null);
   const [activePlanCode, setActivePlanCode] = useState<PlanTier["code"] | null>(null);
 
@@ -73,37 +75,36 @@ export function LandingHeader({ content }: LandingHeaderProps) {
     [content.pricing.plans]
   );
 
-  useEffect(() => {
-    async function loadAccount() {
-      try {
-        const response = await fetch("/api/auth/account", { method: "GET" });
-        if (!response.ok) {
-          setAccount(null);
-          setActivePlanCode(null);
-          setIsAccountLoading(false);
-          return;
-        }
-
-        const payload = (await response.json()) as AccountResponse;
-        if (!payload.ok || !payload.user) {
-          setAccount(null);
-          setActivePlanCode(null);
-          setIsAccountLoading(false);
-          return;
-        }
-
-        setAccount(payload.user);
-        setActivePlanCode(payload.subscription?.planCode ?? null);
-      } catch {
+  const loadAccount = useCallback(async () => {
+    setIsAccountLoading(true);
+    try {
+      const response = await fetch("/api/auth/account", { method: "GET" });
+      if (!response.ok) {
         setAccount(null);
         setActivePlanCode(null);
-      } finally {
-        setIsAccountLoading(false);
+        return;
       }
-    }
 
-    void loadAccount();
+      const payload = (await response.json()) as AccountResponse;
+      if (!payload.ok || !payload.user) {
+        setAccount(null);
+        setActivePlanCode(null);
+        return;
+      }
+
+      setAccount(payload.user);
+      setActivePlanCode(payload.subscription?.planCode ?? null);
+    } catch {
+      setAccount(null);
+      setActivePlanCode(null);
+    } finally {
+      setIsAccountLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadAccount();
+  }, [loadAccount]);
 
   function handleNavClick(event: MouseEvent<HTMLAnchorElement>, href: string) {
     scrollToHash(event, href);
@@ -127,7 +128,28 @@ export function LandingHeader({ content }: LandingHeaderProps) {
 
   function handleAuthenticated() {
     setIsAuthModalOpen(false);
-    window.location.reload();
+    void loadAccount();
+  }
+
+  async function handleCancelSubscription() {
+    setCancelErrorMessage(null);
+    setIsCancellingPlan(true);
+    try {
+      const response = await fetch("/api/subscription/cancel", {
+        method: "POST"
+      });
+      const payload = (await response.json()) as { ok: boolean };
+      if (!response.ok || !payload.ok) {
+        setCancelErrorMessage(content.auth.cancelSubscriptionErrorLabel);
+        return;
+      }
+
+      await loadAccount();
+    } catch {
+      setCancelErrorMessage(content.auth.cancelSubscriptionErrorLabel);
+    } finally {
+      setIsCancellingPlan(false);
+    }
   }
 
   const accountName = account?.fullName || account?.email || content.auth.accountLabel;
@@ -183,6 +205,17 @@ export function LandingHeader({ content }: LandingHeaderProps) {
                   <p className="text-accent mt-2 text-xs">
                     {content.auth.planLabel}: <span className="text-primary">{activePlanLabel}</span>
                   </p>
+                  {activePlanCode ? (
+                    <LoadingButton
+                      type="button"
+                      isLoading={isCancellingPlan}
+                      className="btn-secondary mt-3 w-full text-center"
+                      onClick={handleCancelSubscription}
+                    >
+                      {isCancellingPlan ? content.auth.cancelSubscriptionLoadingLabel : content.auth.cancelSubscriptionLabel}
+                    </LoadingButton>
+                  ) : null}
+                  {cancelErrorMessage ? <p className="text-accent mt-2 text-xs">{cancelErrorMessage}</p> : null}
                   <LoadingButton type="button" isLoading={isLoggingOut} className="btn-secondary mt-3 w-full text-center" onClick={handleLogout}>
                     {content.nav.logout}
                   </LoadingButton>
@@ -238,17 +271,32 @@ export function LandingHeader({ content }: LandingHeaderProps) {
             {isAccountLoading ? (
               <span className="header-account-skeleton mt-2" aria-hidden="true" />
             ) : account ? (
-              <LoadingButton
-                type="button"
-                isLoading={isLoggingOut}
-                className="btn-secondary mt-2 w-full text-center"
-                onClick={() => {
-                  void handleLogout();
-                  setIsMobileMenuOpen(false);
-                }}
-              >
-                {content.nav.logout}
-              </LoadingButton>
+              <>
+                {activePlanCode ? (
+                  <LoadingButton
+                    type="button"
+                    isLoading={isCancellingPlan}
+                    className="btn-secondary mt-2 w-full text-center"
+                    onClick={() => {
+                      void handleCancelSubscription();
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    {isCancellingPlan ? content.auth.cancelSubscriptionLoadingLabel : content.auth.cancelSubscriptionLabel}
+                  </LoadingButton>
+                ) : null}
+                <LoadingButton
+                  type="button"
+                  isLoading={isLoggingOut}
+                  className="btn-secondary mt-2 w-full text-center"
+                  onClick={() => {
+                    void handleLogout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  {content.nav.logout}
+                </LoadingButton>
+              </>
             ) : (
               <button
                 type="button"

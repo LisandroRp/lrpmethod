@@ -81,3 +81,37 @@ export async function findCurrentActiveSubscriptionByUserId(userId: string) {
 
   return rows[0];
 }
+
+export async function findCurrentActiveSubscriptionForCancellation(userId: string) {
+  const path = `subscriptions?select=id,plan_code,status,mercadopago_payment_id,mercadopago_preference_id,metadata&user_id=eq.${encodeURIComponent(userId)}&status=eq.active&order=created_at.desc&limit=1`;
+  const response = await supabaseFetch(path, { method: "GET" });
+  const rows = (await response.json()) as Array<{
+    id: number;
+    plan_code: "basic" | "intermediate" | "premium";
+    status: "active";
+    mercadopago_payment_id: string | null;
+    mercadopago_preference_id: string | null;
+    metadata: Record<string, unknown> | null;
+  }>;
+
+  if (!rows.length) {
+    return null;
+  }
+
+  return rows[0];
+}
+
+export async function cancelSubscriptionById(subscriptionId: number, cancelReason = "user_request") {
+  const path = `subscriptions?id=eq.${subscriptionId}`;
+  await supabaseFetch(path, {
+    method: "PATCH",
+    headers: {
+      Prefer: "return=minimal"
+    },
+    body: JSON.stringify({
+      status: "canceled",
+      canceled_at: new Date().toISOString(),
+      cancel_reason: cancelReason
+    })
+  });
+}

@@ -187,7 +187,10 @@ const messages: Record<AppLocale, LandingContent> = {
       genericError: "Something went wrong. Please try again.",
       accountLabel: "Account",
       planLabel: "Plan",
-      noPlanLabel: "No active plan"
+      noPlanLabel: "No active plan",
+      cancelSubscriptionLabel: "Unsubscribe",
+      cancelSubscriptionLoadingLabel: "Canceling...",
+      cancelSubscriptionErrorLabel: "We could not cancel your subscription right now."
     },
     seo: {
       title: "LRP Method | Online Fitness Coaching & Nutrition Guidance",
@@ -381,7 +384,10 @@ const messages: Record<AppLocale, LandingContent> = {
       genericError: "Algo salio mal. Intentalo de nuevo.",
       accountLabel: "Cuenta",
       planLabel: "Plan",
-      noPlanLabel: "Sin plan activo"
+      noPlanLabel: "Sin plan activo",
+      cancelSubscriptionLabel: "Desuscribirme",
+      cancelSubscriptionLoadingLabel: "Cancelando...",
+      cancelSubscriptionErrorLabel: "No pudimos cancelar tu suscripcion en este momento."
     },
     seo: {
       title: "LRP Method | Coaching Fitness Online y Guia de Alimentacion",

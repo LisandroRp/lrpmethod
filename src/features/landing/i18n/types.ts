@@ -112,6 +112,9 @@ export type LandingContent = {
     accountLabel: string;
     planLabel: string;
     noPlanLabel: string;
+    cancelSubscriptionLabel: string;
+    cancelSubscriptionLoadingLabel: string;
+    cancelSubscriptionErrorLabel: string;
   };
   seo: {
     title: string;
