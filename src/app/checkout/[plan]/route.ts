@@ -43,9 +43,6 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pla
 
   const checkoutUrl = new URL(paymentUrl);
   checkoutUrl.searchParams.set("external_reference", buildCheckoutReference(user.id, plan));
-  if (user.email) {
-    checkoutUrl.searchParams.set("payer_email", user.email);
-  }
 
   return NextResponse.redirect(checkoutUrl.toString());
 }

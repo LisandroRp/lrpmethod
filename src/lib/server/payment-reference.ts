@@ -3,12 +3,20 @@ import { PlanTier } from "@/features/landing/i18n/types";
 const REFERENCE_PREFIX = "lrm";
 
 export function buildCheckoutReference(userId: string, planCode: PlanTier["code"]) {
-  return `${REFERENCE_PREFIX}|u:${userId}|p:${planCode}`;
+  return `${REFERENCE_PREFIX}_u_${userId}_p_${planCode}`;
 }
 
 export function parseCheckoutReference(reference: string | null | undefined): { userId: string | null; planCode: PlanTier["code"] | null } {
   if (!reference) {
     return { userId: null, planCode: null };
+  }
+
+  const simpleMatch = reference.match(/^lrm_u_(.+)_p_(basic|intermediate|premium)$/);
+  if (simpleMatch) {
+    return {
+      userId: simpleMatch[1] ?? null,
+      planCode: (simpleMatch[2] as PlanTier["code"]) ?? null
+    };
   }
 
   const parts = reference.split("|");
