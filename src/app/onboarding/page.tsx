@@ -2,21 +2,52 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import { getLandingContent } from "@/features/landing/i18n/messages";
+import { syncMercadoPagoSubscriptionForUser } from "@/lib/server/mercadopago-subscriptions";
 import { findCurrentActiveSubscriptionByUserId } from "@/lib/server/supabase-admin";
 import { getCurrentAuthenticatedUser } from "@/lib/server/supabase-auth";
 import { getRequestLocale } from "@/lib/i18n/get-request-locale";
 
-export default async function OnboardingPage() {
+type OnboardingPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function firstParam(value: string | string[] | undefined) {
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return value ?? null;
+}
+
+export default async function OnboardingPage({ searchParams }: OnboardingPageProps) {
   const locale = await getRequestLocale();
   const content = getLandingContent(locale);
   const { onboarding } = content;
   const user = await getCurrentAuthenticatedUser();
+  const params = await searchParams;
 
   if (!user) {
     redirect("/?auth=1");
   }
 
-  const activeSubscription = await findCurrentActiveSubscriptionByUserId(user.id);
+  let activeSubscription = await findCurrentActiveSubscriptionByUserId(user.id);
+
+  if (!activeSubscription) {
+    const paymentId = firstParam(params.payment_id) ?? firstParam(params.collection_id);
+    const preapprovalId = firstParam(params.preapproval_id);
+
+    if (paymentId || preapprovalId) {
+      await syncMercadoPagoSubscriptionForUser({
+        userId: user.id,
+        userEmail: user.email ?? null,
+        paymentId,
+        preapprovalId
+      });
+
+      activeSubscription = await findCurrentActiveSubscriptionByUserId(user.id);
+    }
+  }
+
   if (!activeSubscription) {
     return (
       <main className="bg-canvas text-primary flex min-h-screen items-center justify-center px-4 py-8 sm:px-6">
