@@ -8,13 +8,22 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-function setSessionCookies(response: NextResponse, accessToken: string, refreshToken: string) {
+function getCookieDomain(hostname: string) {
+  if (hostname === "lrpmethod.com" || hostname === "www.lrpmethod.com") {
+    return ".lrpmethod.com";
+  }
+
+  return undefined;
+}
+
+function setSessionCookies(response: NextResponse, accessToken: string, refreshToken: string, cookieDomain?: string) {
   response.cookies.set(ACCESS_TOKEN_COOKIE, accessToken, {
     httpOnly: true,
     secure: true,
     sameSite: "lax",
     path: "/",
-    maxAge: SESSION_MAX_AGE_SECONDS
+    maxAge: SESSION_MAX_AGE_SECONDS,
+    domain: cookieDomain
   });
 
   response.cookies.set(REFRESH_TOKEN_COOKIE, refreshToken, {
@@ -22,7 +31,8 @@ function setSessionCookies(response: NextResponse, accessToken: string, refreshT
     secure: true,
     sameSite: "lax",
     path: "/",
-    maxAge: SESSION_MAX_AGE_SECONDS
+    maxAge: SESSION_MAX_AGE_SECONDS,
+    domain: cookieDomain
   });
 }
 
@@ -49,7 +59,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (signup.session) {
-      setSessionCookies(response, signup.session.access_token, signup.session.refresh_token);
+      const cookieDomain = getCookieDomain(request.nextUrl.hostname);
+      setSessionCookies(response, signup.session.access_token, signup.session.refresh_token, cookieDomain);
     }
 
     return response;

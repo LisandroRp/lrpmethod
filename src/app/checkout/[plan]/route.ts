@@ -43,6 +43,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pla
 
   const checkoutUrl = new URL(paymentUrl);
   checkoutUrl.searchParams.set("external_reference", buildCheckoutReference(user.id, plan));
+  checkoutUrl.searchParams.set("back_url", `${request.nextUrl.origin}/onboarding`);
 
   return NextResponse.redirect(checkoutUrl.toString());
 }
