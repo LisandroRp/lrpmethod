@@ -105,8 +105,7 @@ async function fetchMercadoPagoPayment(paymentId: string): Promise<MercadoPagoPa
   });
 
   if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Mercado Pago payment fetch failed (${response.status}): ${errorBody}`);
+    return null;
   }
 
   return (await response.json()) as MercadoPagoPaymentDetails;
@@ -128,8 +127,7 @@ async function fetchMercadoPagoPreapproval(preapprovalId: string): Promise<Merca
   });
 
   if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Mercado Pago preapproval fetch failed (${response.status}): ${errorBody}`);
+    return null;
   }
 
   return (await response.json()) as MercadoPagoPreapprovalDetails;
@@ -215,7 +213,11 @@ export async function POST(request: NextRequest) {
 
     const normalized = await resolveNormalizedPaymentData(eventType, externalId);
     if (!normalized) {
-      return NextResponse.json({ ok: true, processed: false, reason: "Unsupported event or missing access token" });
+      return NextResponse.json({
+        ok: true,
+        processed: false,
+        reason: `Unsupported event, missing access token, or resource not found for ${eventType}:${externalId}`
+      });
     }
 
     if (!isApprovedStatus(normalized.sourceKind, normalized.status)) {
