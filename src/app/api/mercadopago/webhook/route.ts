@@ -29,6 +29,7 @@ type MercadoPagoPreapprovalDetails = {
   id: string;
   status?: string;
   external_reference?: string | null;
+  preapproval_plan_id?: string | null;
   reason?: string | null;
   payer_email?: string | null;
   date_created?: string | null;
@@ -47,9 +48,29 @@ type NormalizedPaymentData = {
   amountArs: number | null;
   currency: string | null;
   approvedAt: string | null;
+  preapprovalPlanId: string | null;
 };
 
-function inferPlanCode(externalReference?: string | null, amount?: number | null) {
+function getPlanIdFromCheckoutUrl(urlValue: string | undefined) {
+  if (!urlValue) {
+    return null;
+  }
+
+  try {
+    const parsedUrl = new URL(urlValue);
+    return parsedUrl.searchParams.get("preapproval_plan_id");
+  } catch {
+    return null;
+  }
+}
+
+const PLAN_ID_BY_CODE = {
+  basic: getPlanIdFromCheckoutUrl(process.env.MP_CHECKOUT_BASIC_URL),
+  intermediate: getPlanIdFromCheckoutUrl(process.env.MP_CHECKOUT_INTERMEDIATE_URL),
+  premium: getPlanIdFromCheckoutUrl(process.env.MP_CHECKOUT_PREMIUM_URL)
+} as const;
+
+function inferPlanCode(externalReference?: string | null, amount?: number | null, preapprovalPlanId?: string | null) {
   const normalizedReference = (externalReference ?? "").toLowerCase();
 
   if (normalizedReference.includes("basic")) {
@@ -73,6 +94,18 @@ function inferPlanCode(externalReference?: string | null, amount?: number | null
   }
 
   if (amount === 59970) {
+    return "premium";
+  }
+
+  if (preapprovalPlanId && preapprovalPlanId === PLAN_ID_BY_CODE.basic) {
+    return "basic";
+  }
+
+  if (preapprovalPlanId && preapprovalPlanId === PLAN_ID_BY_CODE.intermediate) {
+    return "intermediate";
+  }
+
+  if (preapprovalPlanId && preapprovalPlanId === PLAN_ID_BY_CODE.premium) {
     return "premium";
   }
 
@@ -148,7 +181,8 @@ async function resolveNormalizedPaymentData(eventType: string, externalId: strin
       payerEmail: payment.payer?.email?.trim().toLowerCase() ?? null,
       amountArs: payment.transaction_amount ? Math.round(payment.transaction_amount) : null,
       currency: payment.currency_id ?? "ARS",
-      approvedAt: payment.date_approved ?? null
+      approvedAt: payment.date_approved ?? null,
+      preapprovalPlanId: null
     };
   }
 
@@ -163,6 +197,7 @@ async function resolveNormalizedPaymentData(eventType: string, externalId: strin
       sourceKind: "preapproval",
       status: preapproval.status ?? null,
       externalReference: preapproval.external_reference ?? null,
+      preapprovalPlanId: preapproval.preapproval_plan_id ?? null,
       payerEmail: preapproval.payer_email?.trim().toLowerCase() ?? null,
       amountArs: preapproval.auto_recurring?.transaction_amount ? Math.round(preapproval.auto_recurring.transaction_amount) : null,
       currency: preapproval.auto_recurring?.currency_id ?? "ARS",
@@ -227,7 +262,7 @@ export async function POST(request: NextRequest) {
     const parsedReference = parseCheckoutReference(normalized.externalReference);
     const userIdFromReference = parsedReference.userId;
     const planCodeFromReference = parsedReference.planCode;
-    const planCode = planCodeFromReference ?? inferPlanCode(normalized.externalReference, normalized.amountArs);
+    const planCode = planCodeFromReference ?? inferPlanCode(normalized.externalReference, normalized.amountArs, normalized.preapprovalPlanId);
 
     let userId = userIdFromReference;
     if (!userId && normalized.payerEmail) {
@@ -258,6 +293,7 @@ export async function POST(request: NextRequest) {
         metadata: {
           source_kind: normalized.sourceKind,
           external_reference: normalized.externalReference ?? null,
+          preapproval_plan_id: normalized.preapprovalPlanId ?? null,
           payer_email: normalized.payerEmail ?? null,
           preapproval_id: normalized.sourceKind === "preapproval" ? normalized.sourceId : null
         }
