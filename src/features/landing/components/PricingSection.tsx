@@ -82,7 +82,7 @@ export function PricingSection({ content }: PricingSectionProps) {
   }, [content.auth.requiredForCheckoutMessage, pendingPlan]);
 
   function goToCheckout(planCode: PlanTier["code"]) {
-    window.location.assign(`/checkout/${planCode}`);
+    window.location.assign(`/api/mercadopago/subscription/start?plan=${planCode}`);
   }
 
   function handlePlanClick(planCode: PlanTier["code"]) {

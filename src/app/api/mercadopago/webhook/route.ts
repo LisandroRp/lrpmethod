@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { parseCheckoutReference } from "@/lib/server/payment-reference";
-import { findProfileIdByEmail, insertRow, upsertRow } from "@/lib/server/supabase-admin";
+import { getPaymentById, getPreapprovalById } from "@/lib/server/mercadopago-client";
+import { createActiveSubscriptionForUser, findSubscriptionByPreapprovalId, insertRow, updateSubscriptionById } from "@/lib/server/supabase-admin";
 
 type MercadoPagoWebhookPayload = {
   action?: string;
@@ -11,110 +11,17 @@ type MercadoPagoWebhookPayload = {
   data?: {
     id?: number | string;
   };
+  [key: string]: unknown;
 };
 
-type MercadoPagoPaymentDetails = {
-  id: number;
-  status?: string;
-  transaction_amount?: number;
-  currency_id?: string;
-  external_reference?: string | null;
-  date_approved?: string | null;
-  payer?: {
-    email?: string;
-  };
-};
-
-type MercadoPagoPreapprovalDetails = {
-  id: string;
-  status?: string;
-  external_reference?: string | null;
-  preapproval_plan_id?: string | null;
-  reason?: string | null;
-  payer_email?: string | null;
-  date_created?: string | null;
-  auto_recurring?: {
-    transaction_amount?: number;
-    currency_id?: string;
-  };
-};
-
-type NormalizedPaymentData = {
-  sourceId: string;
-  sourceKind: "payment" | "preapproval";
-  status: string | null;
-  externalReference: string | null;
-  payerEmail: string | null;
-  amountArs: number | null;
-  currency: string | null;
-  approvedAt: string | null;
-  preapprovalPlanId: string | null;
-};
-
-function getPlanIdFromCheckoutUrl(urlValue: string | undefined) {
-  if (!urlValue) {
-    return null;
-  }
-
-  try {
-    const parsedUrl = new URL(urlValue);
-    return parsedUrl.searchParams.get("preapproval_plan_id");
-  } catch {
-    return null;
-  }
+function getEventType(request: NextRequest, payload: MercadoPagoWebhookPayload) {
+  const queryType = request.nextUrl.searchParams.get("type") ?? request.nextUrl.searchParams.get("topic");
+  return payload.type ?? payload.topic ?? queryType ?? payload.action ?? "unknown";
 }
 
-const PLAN_ID_BY_CODE = {
-  basic: getPlanIdFromCheckoutUrl(process.env.MP_CHECKOUT_BASIC_URL),
-  intermediate: getPlanIdFromCheckoutUrl(process.env.MP_CHECKOUT_INTERMEDIATE_URL),
-  premium: getPlanIdFromCheckoutUrl(process.env.MP_CHECKOUT_PREMIUM_URL)
-} as const;
-
-function inferPlanCode(externalReference?: string | null, amount?: number | null, preapprovalPlanId?: string | null) {
-  const normalizedReference = (externalReference ?? "").toLowerCase();
-
-  if (normalizedReference.includes("basic")) {
-    return "basic";
-  }
-
-  if (normalizedReference.includes("intermediate")) {
-    return "intermediate";
-  }
-
-  if (normalizedReference.includes("premium")) {
-    return "premium";
-  }
-
-  if (amount === 19900) {
-    return "basic";
-  }
-
-  if (amount === 33500) {
-    return "intermediate";
-  }
-
-  if (amount === 59970) {
-    return "premium";
-  }
-
-  if (preapprovalPlanId && preapprovalPlanId === PLAN_ID_BY_CODE.basic) {
-    return "basic";
-  }
-
-  if (preapprovalPlanId && preapprovalPlanId === PLAN_ID_BY_CODE.intermediate) {
-    return "intermediate";
-  }
-
-  if (preapprovalPlanId && preapprovalPlanId === PLAN_ID_BY_CODE.premium) {
-    return "premium";
-  }
-
-  return null;
-}
-
-function isPaymentEvent(eventType: string) {
-  const normalized = eventType.toLowerCase();
-  return normalized === "payment" || normalized.includes("payment");
+function getResourceId(payload: MercadoPagoWebhookPayload) {
+  const value = payload.data?.id ?? payload.id ?? null;
+  return value === null ? null : String(value);
 }
 
 function isPreapprovalEvent(eventType: string) {
@@ -122,186 +29,187 @@ function isPreapprovalEvent(eventType: string) {
   return normalized.includes("preapproval") || normalized.includes("subscription");
 }
 
-async function fetchMercadoPagoPayment(paymentId: string): Promise<MercadoPagoPaymentDetails | null> {
-  const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
-
-  if (!accessToken) {
-    return null;
-  }
-
-  const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`
-    },
-    cache: "no-store"
-  });
-
-  if (!response.ok) {
-    return null;
-  }
-
-  return (await response.json()) as MercadoPagoPaymentDetails;
+function isPaymentEvent(eventType: string) {
+  const normalized = eventType.toLowerCase();
+  return normalized === "payment" || normalized.includes("payment");
 }
 
-async function fetchMercadoPagoPreapproval(preapprovalId: string): Promise<MercadoPagoPreapprovalDetails | null> {
-  const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+type PlanCode = "basic" | "intermediate" | "premium";
 
-  if (!accessToken) {
+function parseExternalReference(
+  externalReference: string | undefined
+): {
+  userId: string;
+  planCode: PlanCode;
+  intentId: string;
+} | null {
+  if (!externalReference) {
     return null;
   }
 
-  const response = await fetch(`https://api.mercadopago.com/preapproval/${preapprovalId}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`
-    },
-    cache: "no-store"
-  });
-
-  if (!response.ok) {
+  const pattern = /^lrp\|u:([^|]+)\|p:(basic|intermediate|premium)\|i:([^|]+)$/;
+  const match = externalReference.match(pattern);
+  if (!match) {
     return null;
   }
 
-  return (await response.json()) as MercadoPagoPreapprovalDetails;
+  return {
+    userId: match[1],
+    planCode: match[2] as PlanCode,
+    intentId: match[3]
+  };
 }
 
-async function resolveNormalizedPaymentData(eventType: string, externalId: string): Promise<NormalizedPaymentData | null> {
-  if (isPaymentEvent(eventType)) {
-    const payment = await fetchMercadoPagoPayment(externalId);
-    if (!payment) {
-      return null;
+async function syncSubscriptionFromPreapproval(preapproval: {
+  id?: string;
+  status?: string;
+  external_reference?: string;
+  payer_email?: string;
+  auto_recurring?: {
+    transaction_amount?: number;
+  };
+}) {
+  const preapprovalId = preapproval.id?.trim();
+  if (!preapprovalId) {
+    return { ok: false, reason: "missing_preapproval_id" } as const;
+  }
+
+  const parsedReference = parseExternalReference(preapproval.external_reference);
+  if (!parsedReference) {
+    return { ok: false, reason: "invalid_external_reference" } as const;
+  }
+
+  const currentSubscription = await findSubscriptionByPreapprovalId(preapprovalId);
+  const status = preapproval.status ?? "unknown";
+
+  if (status === "authorized") {
+    if (currentSubscription) {
+      await updateSubscriptionById(currentSubscription.id, {
+        status: "active",
+        metadata: {
+          preapproval_id: preapprovalId,
+          external_reference: preapproval.external_reference ?? null,
+          payer_email: preapproval.payer_email ?? null,
+          source: "webhook_subscription_preapproval"
+        }
+      });
+      return { ok: true, reason: "updated_existing_active" } as const;
     }
 
-    return {
-      sourceId: String(payment.id),
-      sourceKind: "payment",
-      status: payment.status ?? null,
-      externalReference: payment.external_reference ?? null,
-      payerEmail: payment.payer?.email?.trim().toLowerCase() ?? null,
-      amountArs: payment.transaction_amount ? Math.round(payment.transaction_amount) : null,
-      currency: payment.currency_id ?? "ARS",
-      approvedAt: payment.date_approved ?? null,
-      preapprovalPlanId: null
-    };
+    await createActiveSubscriptionForUser({
+      userId: parsedReference.userId,
+      planCode: parsedReference.planCode,
+      preapprovalId,
+      externalReference: preapproval.external_reference ?? `lrp|u:${parsedReference.userId}|p:${parsedReference.planCode}|i:${parsedReference.intentId}`,
+      preapprovalPlanId: "none",
+      payerEmail: preapproval.payer_email ?? "unknown",
+      amount_ars: preapproval.auto_recurring?.transaction_amount ?? 0,
+    });
+    return { ok: true, reason: "created_new_active" } as const;
   }
 
-  if (isPreapprovalEvent(eventType)) {
-    const preapproval = await fetchMercadoPagoPreapproval(externalId);
-    if (!preapproval) {
-      return null;
+  if (status === "cancelled" || status === "paused") {
+    if (currentSubscription) {
+      await updateSubscriptionById(currentSubscription.id, {
+        status: "canceled",
+        canceled_at: new Date().toISOString(),
+        cancel_reason: `mercadopago_${status}`
+      });
+      return { ok: true, reason: "updated_existing_canceled" } as const;
     }
 
-    return {
-      sourceId: preapproval.id,
-      sourceKind: "preapproval",
-      status: preapproval.status ?? null,
-      externalReference: preapproval.external_reference ?? null,
-      preapprovalPlanId: preapproval.preapproval_plan_id ?? null,
-      payerEmail: preapproval.payer_email?.trim().toLowerCase() ?? null,
-      amountArs: preapproval.auto_recurring?.transaction_amount ? Math.round(preapproval.auto_recurring.transaction_amount) : null,
-      currency: preapproval.auto_recurring?.currency_id ?? "ARS",
-      approvedAt: preapproval.date_created ?? null
-    };
+    return { ok: true, reason: "no_subscription_to_cancel" } as const;
   }
 
-  return null;
-}
-
-function isApprovedStatus(sourceKind: "payment" | "preapproval", status: string | null) {
-  if (!status) {
-    return false;
-  }
-
-  if (sourceKind === "payment") {
-    return status === "approved";
-  }
-
-  return status === "authorized";
+  return { ok: true, reason: `ignored_status_${status}` } as const;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const configuredToken = process.env.MP_WEBHOOK_TOKEN;
-    const requestToken = request.nextUrl.searchParams.get("token");
+    const configuredToken = process.env.MP_WEBHOOK_TOKEN?.trim();
+    const requestToken = request.nextUrl.searchParams.get("token")?.trim();
 
     if (configuredToken && requestToken !== configuredToken) {
       return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
 
     const payload = (await request.json()) as MercadoPagoWebhookPayload;
-    const queryType = request.nextUrl.searchParams.get("type") ?? request.nextUrl.searchParams.get("topic");
-    const eventType = payload.type ?? payload.topic ?? queryType ?? payload.action ?? "unknown";
-    const externalIdValue = payload.data?.id ?? payload.id ?? null;
-    const externalId = externalIdValue === null ? null : String(externalIdValue);
+    const eventType = getEventType(request, payload);
+    const resourceId = getResourceId(payload);
 
     await insertRow("payment_events", {
       provider: "mercadopago",
       event_type: eventType,
-      external_id: externalId,
+      external_id: resourceId,
       payload
     });
 
-    if (!externalId) {
-      return NextResponse.json({ ok: true, processed: false, reason: "Missing resource id" });
+    if (resourceId && isPaymentEvent(eventType)) {
+      try {
+        const payment = await getPaymentById(resourceId);
+
+        await insertRow("payment_events", {
+          provider: "mercadopago",
+          event_type: "webhook_payment_response",
+          external_id: resourceId,
+          payload: JSON.parse(JSON.stringify(payment)) as Record<string, unknown>
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown payment fetch error";
+
+        await insertRow("payment_events", {
+          provider: "mercadopago",
+          event_type: "webhook_payment_response_error",
+          external_id: resourceId,
+          payload: {
+            resource_id: resourceId,
+            message
+          }
+        });
+      }
     }
 
-    const normalized = await resolveNormalizedPaymentData(eventType, externalId);
-    if (!normalized) {
-      return NextResponse.json({
-        ok: true,
-        processed: false,
-        reason: `Unsupported event, missing access token, or resource not found for ${eventType}:${externalId}`
-      });
+    if (resourceId && isPreapprovalEvent(eventType)) {
+      try {
+        const preapproval = await getPreapprovalById(resourceId);
+
+        const normalizedPreapproval = JSON.parse(JSON.stringify(preapproval)) as {
+          id?: string;
+          status?: string;
+          external_reference?: string;
+          payer_email?: string;
+          auto_recurring?: {
+            transaction_amount?: number;
+          };
+        };
+
+        const syncResult = await syncSubscriptionFromPreapproval(normalizedPreapproval);
+
+        await insertRow("payment_events", {
+          provider: "mercadopago",
+          event_type: "webhook_preapproval_response",
+          external_id: resourceId,
+          payload: {
+            preapproval: normalizedPreapproval,
+            sync_result: syncResult
+          }
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown preapproval fetch error";
+
+        await insertRow("payment_events", {
+          provider: "mercadopago",
+          event_type: "webhook_preapproval_response_error",
+          external_id: resourceId,
+          payload: {
+            resource_id: resourceId,
+            message
+          }
+        });
+      }
     }
 
-    if (!isApprovedStatus(normalized.sourceKind, normalized.status)) {
-      return NextResponse.json({ ok: true, processed: false, reason: `Status ${normalized.status ?? "unknown"} not approved` });
-    }
-
-    const parsedReference = parseCheckoutReference(normalized.externalReference);
-    const userIdFromReference = parsedReference.userId;
-    const planCodeFromReference = parsedReference.planCode;
-    const planCode = planCodeFromReference ?? inferPlanCode(normalized.externalReference, normalized.amountArs, normalized.preapprovalPlanId);
-
-    let userId = userIdFromReference;
-    if (!userId && normalized.payerEmail) {
-      userId = await findProfileIdByEmail(normalized.payerEmail);
-    }
-
-    if (!userId || !planCode || !normalized.amountArs) {
-      return NextResponse.json({
-        ok: true,
-        processed: false,
-        reason: "Missing user mapping, plan code, or amount"
-      });
-    }
-
-    const subscriptionIdentity =
-      normalized.sourceKind === "payment" ? normalized.sourceId : `preapproval:${normalized.sourceId}`;
-
-    await upsertRow(
-      "subscriptions",
-      {
-        user_id: userId,
-        plan_code: planCode,
-        status: "active",
-        amount_ars: normalized.amountArs,
-        currency: normalized.currency ?? "ARS",
-        mercadopago_payment_id: subscriptionIdentity,
-        starts_at: normalized.approvedAt ?? new Date().toISOString(),
-        metadata: {
-          source_kind: normalized.sourceKind,
-          external_reference: normalized.externalReference ?? null,
-          preapproval_plan_id: normalized.preapprovalPlanId ?? null,
-          payer_email: normalized.payerEmail ?? null,
-          preapproval_id: normalized.sourceKind === "preapproval" ? normalized.sourceId : null
-        }
-      },
-      "mercadopago_payment_id"
-    );
-
-    return NextResponse.json({ ok: true, processed: true });
+    return NextResponse.json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });

@@ -1,39 +1,14 @@
 import { NextResponse } from "next/server";
 
+import { cancelPreapprovalById } from "@/lib/server/mercadopago-client";
 import { cancelSubscriptionById, findCurrentActiveSubscriptionForCancellation } from "@/lib/server/supabase-admin";
 import { getCurrentAuthenticatedUser } from "@/lib/server/supabase-auth";
 
-type MercadoPagoPreapprovalResponse = {
-  status?: string;
-};
-
 async function cancelMercadoPagoPreapprovalIfAvailable(preapprovalId: string | null) {
-  const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
-  if (!accessToken || !preapprovalId) {
+  if (!preapprovalId) {
     return;
   }
-
-  const response = await fetch(`https://api.mercadopago.com/preapproval/${preapprovalId}`, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      status: "cancelled"
-    }),
-    cache: "no-store"
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Mercado Pago cancel failed (${response.status}): ${errorBody}`);
-  }
-
-  const payload = (await response.json()) as MercadoPagoPreapprovalResponse;
-  if (payload.status && payload.status !== "cancelled") {
-    throw new Error(`Mercado Pago cancel returned unexpected status: ${payload.status}`);
-  }
+  await cancelPreapprovalById(preapprovalId);
 }
 
 export async function POST() {

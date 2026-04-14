@@ -1,8 +1,8 @@
 import Image from "next/image";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getLandingContent } from "@/features/landing/i18n/messages";
-import { syncMercadoPagoSubscriptionForUser } from "@/lib/server/mercadopago-subscriptions";
 import { findCurrentActiveSubscriptionByUserId } from "@/lib/server/supabase-admin";
 import { getCurrentAuthenticatedUser } from "@/lib/server/supabase-auth";
 import { getRequestLocale } from "@/lib/i18n/get-request-locale";
@@ -11,20 +11,12 @@ type OnboardingPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-function firstParam(value: string | string[] | undefined) {
-  if (Array.isArray(value)) {
-    return value[0] ?? null;
-  }
-
-  return value ?? null;
-}
-
 export default async function OnboardingPage({ searchParams }: OnboardingPageProps) {
   const locale = await getRequestLocale();
   const content = getLandingContent(locale);
   const { onboarding } = content;
   const user = await getCurrentAuthenticatedUser();
-  const params = await searchParams;
+  await searchParams;
 
   if (!user) {
     redirect("/?auth=1");
@@ -32,21 +24,7 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
 
   let activeSubscription = await findCurrentActiveSubscriptionByUserId(user.id);
 
-  if (!activeSubscription) {
-    const paymentId = firstParam(params.payment_id) ?? firstParam(params.collection_id);
-    const preapprovalId = firstParam(params.preapproval_id);
-
-    if (paymentId || preapprovalId) {
-      await syncMercadoPagoSubscriptionForUser({
-        userId: user.id,
-        userEmail: user.email ?? null,
-        paymentId,
-        preapprovalId
-      });
-
-      activeSubscription = await findCurrentActiveSubscriptionByUserId(user.id);
-    }
-  }
+  // Fallback sync intentionally disabled while validating strict webhook-first behavior.
 
   if (!activeSubscription) {
     return (
@@ -54,9 +32,9 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
         <div className="card max-w-xl text-center">
           <h1 className="section-title">{onboarding.pendingApprovalTitle}</h1>
           <p className="text-muted mt-3 text-sm sm:text-base">{onboarding.pendingApprovalDescription}</p>
-          <a href="/onboarding" className="btn-primary mt-6 inline-block">
+          <Link href="/onboarding" className="btn-primary mt-6 inline-block">
             {onboarding.pendingApprovalCtaLabel}
-          </a>
+          </Link>
         </div>
       </main>
     );

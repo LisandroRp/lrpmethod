@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { SectionContainer } from "@/features/landing/components/SectionContainer";
 import { LandingContent } from "@/features/landing/i18n/types";
 
@@ -29,9 +31,9 @@ export function FinalCtaSection({ content }: FinalCtaSectionProps) {
               {finalCta.action.label}
             </a>
             <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-sm">
-              <a href="/onboarding" className="btn-secondary inline-block">
+              <Link href="/onboarding" className="btn-secondary inline-block">
                 {onboarding.ctaLabel}
-              </a>
+              </Link>
               <a href={contact.emailHref} className="btn-secondary inline-block">
                 {contact.emailLabel}
               </a>

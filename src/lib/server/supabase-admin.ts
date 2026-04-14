@@ -1,4 +1,5 @@
 type JsonObject = Record<string, unknown>;
+type PlanCode = "basic" | "intermediate" | "premium";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -113,5 +114,58 @@ export async function cancelSubscriptionById(subscriptionId: number, cancelReaso
       canceled_at: new Date().toISOString(),
       cancel_reason: cancelReason
     })
+  });
+}
+
+export async function createActiveSubscriptionForUser(params: {
+  userId: string;
+  planCode: PlanCode;
+  preapprovalId: string;
+  externalReference: string;
+  preapprovalPlanId: string;
+  payerEmail: string;
+  amount_ars: number;
+}) {
+  await insertRow("subscriptions", {
+    user_id: params.userId,
+    plan_code: params.planCode,
+    status: "active",
+    mercadopago_preference_id: params.preapprovalId,
+    metadata: {
+      preapproval_id: params.preapprovalId,
+      preapproval_plan_id: params.preapprovalPlanId,
+      external_reference: params.externalReference,
+      payer_email: params.payerEmail,
+      source: "preapproval_webhook_sync"
+    },
+    amount_ars: params.amount_ars
+  });
+}
+
+export async function findSubscriptionByPreapprovalId(preapprovalId: string) {
+  const path = `subscriptions?select=id,user_id,plan_code,status&mercadopago_preference_id=eq.${encodeURIComponent(preapprovalId)}&order=created_at.desc&limit=1`;
+  const response = await supabaseFetch(path, { method: "GET" });
+  const rows = (await response.json()) as Array<{
+    id: number;
+    user_id: string;
+    plan_code: "basic" | "intermediate" | "premium";
+    status: string;
+  }>;
+
+  if (!rows.length) {
+    return null;
+  }
+
+  return rows[0];
+}
+
+export async function updateSubscriptionById(subscriptionId: number, fields: JsonObject) {
+  const path = `subscriptions?id=eq.${subscriptionId}`;
+  await supabaseFetch(path, {
+    method: "PATCH",
+    headers: {
+      Prefer: "return=minimal"
+    },
+    body: JSON.stringify(fields)
   });
 }
