@@ -1,5 +1,6 @@
 type JsonObject = Record<string, unknown>;
 type PlanCode = "basic" | "intermediate" | "premium";
+type SubscriptionStatus = "active" | "pending" | "canceled";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -167,5 +168,105 @@ export async function updateSubscriptionById(subscriptionId: number, fields: Jso
       Prefer: "return=minimal"
     },
     body: JSON.stringify(fields)
+  });
+}
+
+export async function hasSubmittedOnboardingByUserId(userId: string): Promise<boolean> {
+  const path = `onboarding_submissions?select=id&user_id=eq.${encodeURIComponent(userId)}&status=eq.submitted&order=submitted_at.desc&limit=1`;
+  const response = await supabaseFetch(path, { method: "GET" });
+  const rows = (await response.json()) as Array<{ id: number }>;
+  return rows.length > 0;
+}
+
+export async function isUserAdmin(userId: string): Promise<boolean> {
+  const path = `profiles?select=is_admin&id=eq.${encodeURIComponent(userId)}&limit=1`;
+  const response = await supabaseFetch(path, { method: "GET" });
+  const rows = (await response.json()) as Array<{ is_admin?: boolean | null }>;
+  return Boolean(rows[0]?.is_admin);
+}
+
+type ListSubscribersParams = {
+  status?: SubscriptionStatus | "all";
+  plan?: PlanCode | "all";
+  q?: string;
+  limit?: number;
+};
+
+export async function listSubscribers(params: ListSubscribersParams) {
+  const status = params.status ?? "all";
+  const plan = params.plan ?? "all";
+  const q = params.q?.trim().toLowerCase() ?? "";
+  const limit = Math.min(Math.max(params.limit ?? 200, 1), 500);
+
+  const filters: string[] = [
+    "select=id,user_id,plan_code,status,created_at,canceled_at",
+    `order=${encodeURIComponent("created_at.desc")}`,
+    `limit=${limit}`
+  ];
+
+  if (status !== "all") {
+    filters.push(`status=eq.${encodeURIComponent(status)}`);
+  }
+
+  if (plan !== "all") {
+    filters.push(`plan_code=eq.${encodeURIComponent(plan)}`);
+  }
+
+  const subscriptionsPath = `subscriptions?${filters.join("&")}`;
+  const subscriptionsResponse = await supabaseFetch(subscriptionsPath, { method: "GET" });
+  const subscriptions = (await subscriptionsResponse.json()) as Array<{
+    id: number;
+    user_id: string;
+    plan_code: PlanCode;
+    status: SubscriptionStatus;
+    created_at: string;
+    canceled_at: string | null;
+  }>;
+
+  const uniqueUserIds = Array.from(new Set(subscriptions.map((row) => row.user_id).filter(Boolean)));
+  let profilesById = new Map<string, { email: string | null; fullName: string | null }>();
+
+  if (uniqueUserIds.length > 0) {
+    const inClause = uniqueUserIds.map((id) => `"${id}"`).join(",");
+    const profilesPath = `profiles?select=id,email,full_name&id=in.(${encodeURIComponent(inClause)})`;
+    const profilesResponse = await supabaseFetch(profilesPath, { method: "GET" });
+    const profiles = (await profilesResponse.json()) as Array<{
+      id: string;
+      email: string | null;
+      full_name: string | null;
+    }>;
+
+    profilesById = new Map(
+      profiles.map((profile) => [
+        profile.id,
+        {
+          email: profile.email,
+          fullName: profile.full_name
+        }
+      ])
+    );
+  }
+
+  const merged = subscriptions.map((subscription) => {
+    const profile = profilesById.get(subscription.user_id);
+    return {
+      id: subscription.id,
+      userId: subscription.user_id,
+      planCode: subscription.plan_code,
+      status: subscription.status,
+      createdAt: subscription.created_at,
+      canceledAt: subscription.canceled_at,
+      email: profile?.email ?? null,
+      fullName: profile?.fullName ?? null
+    };
+  });
+
+  if (!q) {
+    return merged;
+  }
+
+  return merged.filter((row) => {
+    const haystack = `${row.fullName ?? ""} ${row.email ?? ""} ${row.userId}`.toLowerCase();
+    return haystack.includes(q);
   });
 }

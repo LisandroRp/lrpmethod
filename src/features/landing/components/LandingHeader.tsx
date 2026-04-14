@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { MouseEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import { LoadingButton } from "@/components/composed/LoadingButton";
@@ -18,6 +19,7 @@ type AccountResponse = {
     id: string;
     email: string | null;
     fullName: string | null;
+    isAdmin?: boolean;
   };
   subscription?: {
     planCode: PlanTier["code"];
@@ -205,20 +207,27 @@ export function LandingHeader({ content }: LandingHeaderProps) {
                   <p className="text-accent mt-2 text-xs">
                     {content.auth.planLabel}: <span className="text-primary">{activePlanLabel}</span>
                   </p>
-                  {activePlanCode ? (
-                    <LoadingButton
-                      type="button"
-                      isLoading={isCancellingPlan}
-                      className="btn-secondary mt-3 w-full text-center"
-                      onClick={handleCancelSubscription}
-                    >
-                      {isCancellingPlan ? content.auth.cancelSubscriptionLoadingLabel : content.auth.cancelSubscriptionLabel}
+                  <div className="profile-menu-actions mt-3">
+                    {activePlanCode ? (
+                      <Link href="/onboarding" className="profile-menu-action" onClick={() => setIsUserMenuOpen(false)}>
+                        {content.auth.formLabel}
+                      </Link>
+                    ) : null}
+                    {account?.isAdmin ? (
+                      <Link href="/admin/subscribers" className="profile-menu-action" onClick={() => setIsUserMenuOpen(false)}>
+                        {content.auth.subscribersLabel}
+                      </Link>
+                    ) : null}
+                    {activePlanCode ? (
+                      <LoadingButton type="button" isLoading={isCancellingPlan} className="profile-menu-action" onClick={handleCancelSubscription}>
+                        {isCancellingPlan ? content.auth.cancelSubscriptionLoadingLabel : content.auth.cancelSubscriptionLabel}
+                      </LoadingButton>
+                    ) : null}
+                    <LoadingButton type="button" isLoading={isLoggingOut} className="profile-menu-action" onClick={handleLogout}>
+                      {content.nav.logout}
                     </LoadingButton>
-                  ) : null}
+                  </div>
                   {cancelErrorMessage ? <p className="text-accent mt-2 text-xs">{cancelErrorMessage}</p> : null}
-                  <LoadingButton type="button" isLoading={isLoggingOut} className="btn-secondary mt-3 w-full text-center" onClick={handleLogout}>
-                    {content.nav.logout}
-                  </LoadingButton>
                 </div>
               ) : null}
             </div>
@@ -272,30 +281,42 @@ export function LandingHeader({ content }: LandingHeaderProps) {
               <span className="header-account-skeleton mt-2" aria-hidden="true" />
             ) : account ? (
               <>
-                {activePlanCode ? (
+                <div className="profile-menu-actions mt-2 w-full">
+                  {activePlanCode ? (
+                    <Link href="/onboarding" className="profile-menu-action w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                      {content.auth.formLabel}
+                    </Link>
+                  ) : null}
+                  {account?.isAdmin ? (
+                    <Link href="/admin/subscribers" className="profile-menu-action w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                      {content.auth.subscribersLabel}
+                    </Link>
+                  ) : null}
+                  {activePlanCode ? (
+                    <LoadingButton
+                      type="button"
+                      isLoading={isCancellingPlan}
+                      className="profile-menu-action w-full"
+                      onClick={() => {
+                        void handleCancelSubscription();
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      {isCancellingPlan ? content.auth.cancelSubscriptionLoadingLabel : content.auth.cancelSubscriptionLabel}
+                    </LoadingButton>
+                  ) : null}
                   <LoadingButton
                     type="button"
-                    isLoading={isCancellingPlan}
-                    className="btn-secondary mt-2 w-full text-center"
+                    isLoading={isLoggingOut}
+                    className="profile-menu-action w-full"
                     onClick={() => {
-                      void handleCancelSubscription();
+                      void handleLogout();
                       setIsMobileMenuOpen(false);
                     }}
                   >
-                    {isCancellingPlan ? content.auth.cancelSubscriptionLoadingLabel : content.auth.cancelSubscriptionLabel}
+                    {content.nav.logout}
                   </LoadingButton>
-                ) : null}
-                <LoadingButton
-                  type="button"
-                  isLoading={isLoggingOut}
-                  className="btn-secondary mt-2 w-full text-center"
-                  onClick={() => {
-                    void handleLogout();
-                    setIsMobileMenuOpen(false);
-                  }}
-                >
-                  {content.nav.logout}
-                </LoadingButton>
+                </div>
               </>
             ) : (
               <button

@@ -19,7 +19,7 @@ export function FooterSection({ content }: FooterSectionProps) {
               <circle cx="12" cy="12" r="4.2" stroke="currentColor" strokeWidth="1.8" />
               <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
             </svg>
-            <span>{content.contact.instagramLabel}</span>
+            <span>@lrpmethod</span>
           </a>
           <a href={content.contact.emailHref} className="header-link inline-flex items-center gap-2">
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">

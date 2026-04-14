@@ -159,7 +159,7 @@ const messages: Record<AppLocale, LandingContent> = {
     onboarding: {
       title: "Initial Assessment Form",
       description: "Complete your data so we can build your training and nutrition plan.",
-      ctaLabel: "Complete onboarding form",
+      ctaLabel: "Complete form",
       pageTitle: "LRP Method Initial Assessment",
       pageDescription: "Fill in your profile and context so we can prepare your coaching plan.",
       embedUrl:
@@ -188,6 +188,8 @@ const messages: Record<AppLocale, LandingContent> = {
       accountLabel: "Account",
       planLabel: "Plan",
       noPlanLabel: "No active plan",
+      subscribersLabel: "Subscribers",
+      formLabel: "Form",
       cancelSubscriptionLabel: "Unsubscribe",
       cancelSubscriptionLoadingLabel: "Canceling...",
       cancelSubscriptionErrorLabel: "We could not cancel your subscription right now."
@@ -356,7 +358,7 @@ const messages: Record<AppLocale, LandingContent> = {
     onboarding: {
       title: "Formulario de Evaluacion Inicial",
       description: "Completa tus datos para que armemos tu plan de entrenamiento y alimentacion.",
-      ctaLabel: "Completar formulario de onboarding",
+      ctaLabel: "Completar formulario",
       pageTitle: "Evaluacion Inicial LRP Method",
       pageDescription: "Completa tu perfil y contexto para preparar tu plan de coaching.",
       embedUrl:
@@ -385,6 +387,8 @@ const messages: Record<AppLocale, LandingContent> = {
       accountLabel: "Cuenta",
       planLabel: "Plan",
       noPlanLabel: "Sin plan activo",
+      subscribersLabel: "Subscriptores",
+      formLabel: "Formulario",
       cancelSubscriptionLabel: "Desuscribirme",
       cancelSubscriptionLoadingLabel: "Cancelando...",
       cancelSubscriptionErrorLabel: "No pudimos cancelar tu suscripcion en este momento."

@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 
 import { SectionContainer } from "@/features/landing/components/SectionContainer";
+import { useAccountSubscription } from "@/features/landing/hooks/useAccountSubscription";
 import { LandingContent } from "@/features/landing/i18n/types";
 
 type FinalCtaSectionProps = {
@@ -9,6 +12,7 @@ type FinalCtaSectionProps = {
 
 export function FinalCtaSection({ content }: FinalCtaSectionProps) {
   const { finalCta, contact, onboarding } = content;
+  const { hasActivePlan } = useAccountSubscription();
 
   return (
     <section id="final-cta" className="p-5 sm:p-[55px]">
@@ -31,9 +35,11 @@ export function FinalCtaSection({ content }: FinalCtaSectionProps) {
               {finalCta.action.label}
             </a>
             <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-sm">
-              <Link href="/onboarding" className="btn-secondary inline-block">
-                {onboarding.ctaLabel}
-              </Link>
+              {hasActivePlan ? (
+                <Link href="/onboarding" className="btn-secondary inline-block">
+                  {onboarding.ctaLabel}
+                </Link>
+              ) : null}
               <a href={contact.emailHref} className="btn-secondary inline-block">
                 {contact.emailLabel}
               </a>

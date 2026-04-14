@@ -20,7 +20,7 @@ function getPlanConfig(planCode: PlanCode) {
     }
   > = {
     basic: {
-      amount: 19900,
+      amount: 100,
       reason: "LRP Method - Basic"
     },
     intermediate: {

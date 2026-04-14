@@ -1,3 +1,4 @@
+import { ActivePlanPrompt } from "@/features/landing/components/ActivePlanPrompt";
 import { BenefitsSection } from "@/features/landing/components/BenefitsSection";
 import { FaqSection } from "@/features/landing/components/FaqSection";
 import { FinalCtaSection } from "@/features/landing/components/FinalCtaSection";
@@ -16,6 +17,7 @@ export default async function HomePage() {
   return (
     <div className="bg-canvas text-primary min-h-screen">
       <span id="top" />
+      <ActivePlanPrompt content={content} />
       <LandingHeader content={content} />
       <main>
         <HeroSection content={content} />

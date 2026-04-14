@@ -112,6 +112,8 @@ export type LandingContent = {
     accountLabel: string;
     planLabel: string;
     noPlanLabel: string;
+    subscribersLabel: string;
+    formLabel: string;
     cancelSubscriptionLabel: string;
     cancelSubscriptionLoadingLabel: string;
     cancelSubscriptionErrorLabel: string;
