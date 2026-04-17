@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { findCurrentActiveSubscriptionByUserId, hasSubmittedOnboardingByUserId, isUserAdmin } from "@/lib/server/supabase-admin";
+import { hasSubmittedOnboardingAnswerByUserId } from "@/lib/server/onboarding-admin";
+import { findCurrentActiveSubscriptionByUserId, isUserAdmin } from "@/lib/server/supabase-admin";
 import { getCurrentAuthenticatedUser } from "@/lib/server/supabase-auth";
 
 export async function GET() {
@@ -10,9 +11,37 @@ export async function GET() {
     return NextResponse.json({ ok: false, user: null }, { status: 401 });
   }
 
-  const subscription = await findCurrentActiveSubscriptionByUserId(user.id);
-  const admin = await isUserAdmin(user.id);
-  const onboardingSubmitted = await hasSubmittedOnboardingByUserId(user.id);
+  let subscription: Awaited<ReturnType<typeof findCurrentActiveSubscriptionByUserId>> = null;
+  let admin = false;
+  let onboardingSubmitted = false;
+
+  try {
+    const [subscriptionResult, adminResult, onboardingResult] = await Promise.allSettled([
+      findCurrentActiveSubscriptionByUserId(user.id),
+      isUserAdmin(user.id),
+      hasSubmittedOnboardingAnswerByUserId(user.id)
+    ]);
+
+    if (subscriptionResult.status === "fulfilled") {
+      subscription = subscriptionResult.value;
+    } else {
+      console.error("[auth/account] failed to fetch subscription", subscriptionResult.reason);
+    }
+
+    if (adminResult.status === "fulfilled") {
+      admin = adminResult.value;
+    } else {
+      console.error("[auth/account] failed to fetch admin role", adminResult.reason);
+    }
+
+    if (onboardingResult.status === "fulfilled") {
+      onboardingSubmitted = onboardingResult.value;
+    } else {
+      console.error("[auth/account] failed to fetch onboarding state", onboardingResult.reason);
+    }
+  } catch (error) {
+    console.error("[auth/account] unexpected error", error);
+  }
 
   return NextResponse.json({
     ok: true,

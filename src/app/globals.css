@@ -275,8 +275,6 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.1rem;
-  height: 2.1rem;
   border-radius: 999px;
   border: 1px solid color-mix(in oklch, var(--color-accent) 62%, var(--color-border-subtle));
   background-color: color-mix(in oklch, var(--color-accent) 22%, var(--color-canvas));

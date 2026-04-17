@@ -2,29 +2,30 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { MouseEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { MouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import { TbLogout2 } from "react-icons/tb";
 
 import { LoadingButton } from "@/components/composed/LoadingButton";
+import { useAccount } from "@/features/contexts/AccountContext";
 import { AuthModal } from "@/features/landing/components/AuthModal";
 import { SectionContainer } from "@/features/landing/components/SectionContainer";
-import { LandingContent, PlanTier } from "@/features/landing/i18n/types";
+import { LandingContent } from "@/features/landing/i18n/types";
+import { useModal } from "@/features/contexts/ModalContext";
+import { Avatar } from "./Avatar";
 
 type LandingHeaderProps = {
   content: LandingContent;
+  showSectionLinks?: boolean;
 };
 
-type AccountResponse = {
-  ok: boolean;
-  user?: {
-    id: string;
-    email: string | null;
-    fullName: string | null;
-    isAdmin?: boolean;
-  };
-  subscription?: {
-    planCode: PlanTier["code"];
-  } | null;
-};
+function LogoutLabel({ text }: { text: string }) {
+  return (
+    <>
+      <TbLogout2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+      <span>{text}</span>
+    </>
+  );
+}
 
 function scrollToHash(event: MouseEvent<HTMLAnchorElement>, href: string) {
   event.preventDefault();
@@ -47,26 +48,26 @@ function scrollToHash(event: MouseEvent<HTMLAnchorElement>, href: string) {
   });
 }
 
-export function LandingHeader({ content }: LandingHeaderProps) {
+export function LandingHeader({ content, showSectionLinks = true }: LandingHeaderProps) {
+  const { user: accountUser, activePlanCode, isLoading: isAccountLoading, refreshAccount, clearAccount } = useAccount();
+  const { openUnsubscribeModal } = useModal();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isAccountLoading, setIsAccountLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [isCancellingPlan, setIsCancellingPlan] = useState(false);
-  const [cancelErrorMessage, setCancelErrorMessage] = useState<string | null>(null);
-  const [account, setAccount] = useState<AccountResponse["user"] | null>(null);
-  const [activePlanCode, setActivePlanCode] = useState<PlanTier["code"] | null>(null);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const navItems = useMemo(
-    () => [
+  const navItems = useMemo(() => {
+    if (!showSectionLinks) {
+      return [];
+    }
+    return [
       { label: content.nav.howItWorks, href: "#how-it-works" },
       { label: content.nav.benefits, href: "#benefits" },
       { label: content.nav.plans, href: "#plans" },
       { label: content.nav.faq, href: "#faq" }
-    ],
-    [content]
-  );
+    ];
+  }, [content, showSectionLinks]);
 
   const planNameByCode = useMemo(
     () =>
@@ -77,38 +78,35 @@ export function LandingHeader({ content }: LandingHeaderProps) {
     [content.pricing.plans]
   );
 
-  const loadAccount = useCallback(async () => {
-    setIsAccountLoading(true);
-    try {
-      const response = await fetch("/api/auth/account", { method: "GET" });
-      if (!response.ok) {
-        setAccount(null);
-        setActivePlanCode(null);
-        return;
-      }
-
-      const payload = (await response.json()) as AccountResponse;
-      if (!payload.ok || !payload.user) {
-        setAccount(null);
-        setActivePlanCode(null);
-        return;
-      }
-
-      setAccount(payload.user);
-      setActivePlanCode(payload.subscription?.planCode ?? null);
-    } catch {
-      setAccount(null);
-      setActivePlanCode(null);
-    } finally {
-      setIsAccountLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    void loadAccount();
-  }, [loadAccount]);
+    if (!isUserMenuOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: globalThis.MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) {
+        return;
+      }
+
+      if (!userMenuRef.current?.contains(target)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, [isUserMenuOpen]);
 
   function handleNavClick(event: MouseEvent<HTMLAnchorElement>, href: string) {
+    if (!href.startsWith("#")) {
+      return;
+    }
     scrollToHash(event, href);
     setIsMobileMenuOpen(false);
   }
@@ -120,8 +118,7 @@ export function LandingHeader({ content }: LandingHeaderProps) {
         method: "POST"
       });
 
-      setAccount(null);
-      setActivePlanCode(null);
+      clearAccount();
       setIsUserMenuOpen(false);
     } finally {
       setIsLoggingOut(false);
@@ -130,37 +127,17 @@ export function LandingHeader({ content }: LandingHeaderProps) {
 
   function handleAuthenticated() {
     setIsAuthModalOpen(false);
-    void loadAccount();
+    void refreshAccount();
   }
 
-  async function handleCancelSubscription() {
-    setCancelErrorMessage(null);
-    setIsCancellingPlan(true);
-    try {
-      const response = await fetch("/api/subscription/cancel", {
-        method: "POST"
-      });
-      const payload = (await response.json()) as { ok: boolean };
-      if (!response.ok || !payload.ok) {
-        setCancelErrorMessage(content.auth.cancelSubscriptionErrorLabel);
-        return;
-      }
-
-      await loadAccount();
-    } catch {
-      setCancelErrorMessage(content.auth.cancelSubscriptionErrorLabel);
-    } finally {
-      setIsCancellingPlan(false);
-    }
-  }
-
-  const accountName = account?.fullName || account?.email || content.auth.accountLabel;
-  const activePlanLabel = activePlanCode ? planNameByCode[activePlanCode] : content.auth.noPlanLabel;
+  const accountName = accountUser?.fullName || accountUser?.email || content.auth.accountLabel;
+  const activePlanLabel = accountUser?.isAdmin ? content.auth.adminPlanLabel : activePlanCode ? planNameByCode[activePlanCode] : content.auth.noPlanLabel;
+  const logoHref = showSectionLinks ? "#top" : "/";
 
   return (
     <header id="landing-header" className="bg-canvas border-subtle sticky top-0 z-20 border-b">
       <SectionContainer className="flex h-16 items-center justify-between">
-        <a href="#top" className="flex items-center" onClick={(event) => handleNavClick(event, "#top")}>
+        <a href={logoHref} className="flex items-center" onClick={(event) => handleNavClick(event, logoHref)}>
           <Image
             src="/brand/lrp-method-logo.png"
             alt={content.brand.name}
@@ -171,63 +148,75 @@ export function LandingHeader({ content }: LandingHeaderProps) {
         </a>
 
         <div className="hidden items-center gap-4 sm:flex">
-          <nav className="text-muted flex items-center gap-6 text-sm font-medium">
-            {navItems.map((item) => (
-              <a key={item.href} href={item.href} className="header-link" onClick={(event) => handleNavClick(event, item.href)}>
-                {item.label}
-              </a>
-            ))}
-          </nav>
+          {navItems.length ? (
+            <nav className="text-muted flex items-center gap-6 text-sm font-medium">
+              {navItems.map((item) => (
+                <a key={item.href} href={item.href} className="header-link" onClick={(event) => handleNavClick(event, item.href)}>
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+          ) : null}
 
           {isAccountLoading ? (
             <span className="header-account-skeleton" aria-hidden="true" />
-          ) : account ? (
-            <div className="relative">
+          ) : accountUser ? (
+            <div ref={userMenuRef} className="relative">
               <button
                 type="button"
-                className="user-menu-trigger"
                 aria-label={content.auth.accountLabel}
                 onClick={() => setIsUserMenuOpen((current) => !current)}
               >
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <path d="M12 12C14.4853 12 16.5 9.98528 16.5 7.5C16.5 5.01472 14.4853 3 12 3C9.51472 3 7.5 5.01472 7.5 7.5C7.5 9.98528 9.51472 12 12 12Z" stroke="currentColor" strokeWidth="1.8" />
-                  <path
-                    d="M4 20.1C4.7 16.7 7.7 14.5 12 14.5C16.3 14.5 19.3 16.7 20 20.1"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                  />
-                </svg>
+                <Avatar {...{content}}/>
               </button>
 
               {isUserMenuOpen ? (
                 <div className="bg-surface border-subtle absolute right-0 top-12 z-30 w-64 rounded-xl border p-3 shadow-lg">
                   <p className="text-primary truncate text-sm font-semibold">{accountName}</p>
-                  {account?.email ? <p className="text-muted mt-1 truncate text-xs">{account.email}</p> : null}
+                  {accountUser?.email ? <p className="text-muted mt-1 truncate text-xs">{accountUser.email}</p> : null}
                   <p className="text-accent mt-2 text-xs">
                     {content.auth.planLabel}: <span className="text-primary">{activePlanLabel}</span>
                   </p>
                   <div className="profile-menu-actions mt-3">
+                    <Link href="/profile" className="profile-menu-action" onClick={() => setIsUserMenuOpen(false)}>
+                      {content.auth.profileLabel}
+                    </Link>
                     {activePlanCode ? (
                       <Link href="/onboarding" className="profile-menu-action" onClick={() => setIsUserMenuOpen(false)}>
                         {content.auth.formLabel}
                       </Link>
                     ) : null}
-                    {account?.isAdmin ? (
+                    {accountUser?.isAdmin ? (
                       <Link href="/admin/subscribers" className="profile-menu-action" onClick={() => setIsUserMenuOpen(false)}>
                         {content.auth.subscribersLabel}
                       </Link>
                     ) : null}
                     {activePlanCode ? (
-                      <LoadingButton type="button" isLoading={isCancellingPlan} className="profile-menu-action" onClick={handleCancelSubscription}>
-                        {isCancellingPlan ? content.auth.cancelSubscriptionLoadingLabel : content.auth.cancelSubscriptionLabel}
-                      </LoadingButton>
+                      <button
+                        type="button"
+                        className="profile-menu-action"
+                        onClick={() => {
+                          openUnsubscribeModal({
+                            planName: planNameByCode[activePlanCode],
+                            onConfirm: async () => {
+                              const response = await fetch("/api/subscription/cancel", { method: "POST" });
+                              const payload = (await response.json()) as { ok: boolean };
+                              if (!response.ok || !payload.ok) {
+                                throw new Error("cancel_failed");
+                              }
+                              await refreshAccount();
+                            }
+                          });
+                          setIsUserMenuOpen(false);
+                        }}
+                      >
+                        {content.auth.cancelSubscriptionLabel}
+                      </button>
                     ) : null}
                     <LoadingButton type="button" isLoading={isLoggingOut} className="profile-menu-action" onClick={handleLogout}>
-                      {content.nav.logout}
+                      <LogoutLabel text={content.nav.logout} />
                     </LoadingButton>
                   </div>
-                  {cancelErrorMessage ? <p className="text-accent mt-2 text-xs">{cancelErrorMessage}</p> : null}
                 </div>
               ) : null}
             </div>
@@ -279,31 +268,43 @@ export function LandingHeader({ content }: LandingHeaderProps) {
 
             {isAccountLoading ? (
               <span className="header-account-skeleton mt-2" aria-hidden="true" />
-            ) : account ? (
+            ) : accountUser ? (
               <>
                 <div className="profile-menu-actions mt-2 w-full">
+                  <Link href="/profile" className="profile-menu-action w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                    {content.auth.profileLabel}
+                  </Link>
                   {activePlanCode ? (
                     <Link href="/onboarding" className="profile-menu-action w-full" onClick={() => setIsMobileMenuOpen(false)}>
                       {content.auth.formLabel}
                     </Link>
                   ) : null}
-                  {account?.isAdmin ? (
+                  {accountUser?.isAdmin ? (
                     <Link href="/admin/subscribers" className="profile-menu-action w-full" onClick={() => setIsMobileMenuOpen(false)}>
                       {content.auth.subscribersLabel}
                     </Link>
                   ) : null}
                   {activePlanCode ? (
-                    <LoadingButton
+                    <button
                       type="button"
-                      isLoading={isCancellingPlan}
                       className="profile-menu-action w-full"
                       onClick={() => {
-                        void handleCancelSubscription();
+                        openUnsubscribeModal({
+                          planName: planNameByCode[activePlanCode],
+                          onConfirm: async () => {
+                            const response = await fetch("/api/subscription/cancel", { method: "POST" });
+                            const payload = (await response.json()) as { ok: boolean };
+                            if (!response.ok || !payload.ok) {
+                              throw new Error("cancel_failed");
+                            }
+                            await refreshAccount();
+                          }
+                        });
                         setIsMobileMenuOpen(false);
                       }}
                     >
-                      {isCancellingPlan ? content.auth.cancelSubscriptionLoadingLabel : content.auth.cancelSubscriptionLabel}
-                    </LoadingButton>
+                      {content.auth.cancelSubscriptionLabel}
+                    </button>
                   ) : null}
                   <LoadingButton
                     type="button"
@@ -314,7 +315,7 @@ export function LandingHeader({ content }: LandingHeaderProps) {
                       setIsMobileMenuOpen(false);
                     }}
                   >
-                    {content.nav.logout}
+                    <LogoutLabel text={content.nav.logout} />
                   </LoadingButton>
                 </div>
               </>

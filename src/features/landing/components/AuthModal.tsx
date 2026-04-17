@@ -15,6 +15,40 @@ type AuthModalProps = {
 
 type Mode = "login" | "signup";
 
+function resolveAuthErrorMessage(rawMessage: string, content: LandingContent["auth"]) {
+  const lower = rawMessage.toLowerCase();
+
+  if (lower.includes("email_not_confirmed") || lower.includes("email not confirmed")) {
+    return content.emailNotConfirmedMessage;
+  }
+
+  const supabaseJsonMatch = rawMessage.match(/:\s*(\{.*\})$/);
+  if (supabaseJsonMatch?.[1]) {
+    try {
+      const parsed = JSON.parse(supabaseJsonMatch[1]) as { error_code?: string; msg?: string };
+      const errorCode = parsed.error_code?.toLowerCase();
+      const msg = parsed.msg?.trim();
+      const msgLower = msg?.toLowerCase() ?? "";
+
+      if (errorCode === "invalid_credentials" || msgLower.includes("invalid login credentials")) {
+        return content.invalidCredentialsMessage;
+      }
+
+      if (msg) {
+        return msg;
+      }
+    } catch {
+      // Ignore parse error and fallback to default handling.
+    }
+  }
+
+  if (lower.includes("invalid login credentials") || lower.includes("invalid_credentials")) {
+    return content.invalidCredentialsMessage;
+  }
+
+  return rawMessage;
+}
+
 export function AuthModal({ content, isOpen, onClose, onAuthenticated, checkoutMessage }: AuthModalProps) {
   const [mode, setMode] = useState<Mode>("login");
   const [fullName, setFullName] = useState("");
@@ -78,7 +112,7 @@ export function AuthModal({ content, isOpen, onClose, onAuthenticated, checkoutM
       onAuthenticated();
     } catch (error) {
       const rawMessage = error instanceof Error ? error.message : content.genericError;
-      const message = rawMessage.toLowerCase().includes("email_not_confirmed") ? content.emailNotConfirmedMessage : rawMessage;
+      const message = resolveAuthErrorMessage(rawMessage, content);
       setErrorMessage(message);
     } finally {
       setIsSubmitting(false);

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+import { AppProviders } from "@/app/AppProviders";
 import { getLandingContent } from "@/features/landing/i18n/messages";
 import { getRequestLocale } from "@/lib/i18n/get-request-locale";
 
@@ -98,7 +99,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             __html: JSON.stringify(organizationSchema)
           }}
         />
-        {children}
+        <AppProviders content={content}>{children}</AppProviders>
       </body>
     </html>
   );

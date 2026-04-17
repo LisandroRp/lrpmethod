@@ -15,6 +15,7 @@ This framework ensures delivery of high-quality, secure, and maintainable UI cod
 ### 2.1 Technological Limits
 
 - Allowed implementation stack is limited to Next.js, React, TypeScript, Tailwind CSS, shadcn/ui, Zod, and React Hook Form.
+- Icons in application code must come from `react-icons` (no inline SVG icons unless explicitly approved by a human).
 - Introducing new libraries, patterns, or tools requires explicit human approval.
 - UI primitives must be generated from shadcn/ui (via shadcn MCP workflow or shadcn CLI). Hand-rolled "shadcn-style" replacements are not allowed unless explicitly approved by a human.
 - UI colors must consume semantic design tokens.
@@ -132,6 +133,7 @@ Before any write action (file edits, code generation, implementation command exe
 - `safe off` -> sets `SAFE_WRITE=OFF`.
 - `safe status` -> reports current mode.
 - Unless explicitly set otherwise by the user, prefer `SAFE_WRITE=ON`.
+- Current repository mode: `SAFE_WRITE=ON`.
 
 ## 5. Rulebook Authority
 
@@ -156,9 +158,9 @@ Violation of any applicable rule is a framework breach even if the code compiles
 
 - Current stack-local skills: `shadcn`, `vercel-composition-patterns`, `vercel-react-best-practices`, `web-design-guidelines`.
 - Common skills: `security-semgrep`, `frontend-networking-layer`.
-- Delivery flows: `feature-flow`, `bug-fix-flow`, `testing-flow`, `documentation-flow`.
+- Delivery flows: `feature-flow`, `bug-fix-flow`, `testing-flow`, `documentation-flow`, `design-flow`.
 - Runtime validation tooling: Chrome DevTools MCP and Playwright when available.
-- MCP policy and setup templates are defined in `.agents/mcp/USAGE.md` (mandatory for `playwright`, `chrome-devtools`, and `shadcn` workflows).
+- MCP policy and setup templates are defined in `.agents/mcp/USAGE.md` (mandatory for `playwright`, `chrome-devtools`, `shadcn` workflows).
 
 ## 7. Standard Workflow
 

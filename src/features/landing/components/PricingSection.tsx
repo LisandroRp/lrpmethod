@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { useAccount } from "@/features/contexts/AccountContext";
 import { AuthModal } from "@/features/landing/components/AuthModal";
 import { SectionContainer } from "@/features/landing/components/SectionContainer";
 import { LandingContent, PlanTier } from "@/features/landing/i18n/types";
@@ -10,14 +11,9 @@ type PricingSectionProps = {
   content: LandingContent;
 };
 
-type AuthMeResponse = {
-  ok: boolean;
-  user?: {
-    id: string;
-  };
-};
-
 export function PricingSection({ content }: PricingSectionProps) {
+  const { user, isLoading: isAccountLoading, refreshAccount } = useAccount();
+
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -26,7 +22,7 @@ export function PricingSection({ content }: PricingSectionProps) {
     const params = new URLSearchParams(window.location.search);
     return params.get("auth") === "1";
   });
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
   const [pendingPlan, setPendingPlan] = useState<PlanTier["code"] | null>(() => {
     if (typeof window === "undefined") {
       return null;
@@ -40,25 +36,6 @@ export function PricingSection({ content }: PricingSectionProps) {
 
     return null;
   });
-
-  useEffect(() => {
-    async function loadSession() {
-      try {
-        const response = await fetch("/api/auth/me", { method: "GET" });
-        if (!response.ok) {
-          setIsAuthenticated(false);
-          return;
-        }
-
-        const payload = (await response.json()) as AuthMeResponse;
-        setIsAuthenticated(Boolean(payload.ok && payload.user?.id));
-      } catch {
-        setIsAuthenticated(false);
-      }
-    }
-
-    void loadSession();
-  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -86,7 +63,7 @@ export function PricingSection({ content }: PricingSectionProps) {
   }
 
   function handlePlanClick(planCode: PlanTier["code"]) {
-    if (isAuthenticated) {
+    if (user?.id) {
       goToCheckout(planCode);
       return;
     }
@@ -96,12 +73,11 @@ export function PricingSection({ content }: PricingSectionProps) {
   }
 
   function handleAuthenticated() {
-    setIsAuthenticated(true);
     setIsAuthModalOpen(false);
+    void refreshAccount();
 
     if (pendingPlan) {
       goToCheckout(pendingPlan);
-      return;
     }
   }
 
@@ -135,7 +111,12 @@ export function PricingSection({ content }: PricingSectionProps) {
                 ))}
               </ul>
 
-              <button type="button" className="btn-primary mt-6 block w-full text-center" onClick={() => handlePlanClick(plan.code)}>
+              <button
+                type="button"
+                className="btn-primary mt-6 block w-full text-center"
+                onClick={() => handlePlanClick(plan.code)}
+                disabled={isAccountLoading}
+              >
                 {plan.ctaLabel}
               </button>
             </article>

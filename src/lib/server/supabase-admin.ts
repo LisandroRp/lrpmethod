@@ -171,13 +171,6 @@ export async function updateSubscriptionById(subscriptionId: number, fields: Jso
   });
 }
 
-export async function hasSubmittedOnboardingByUserId(userId: string): Promise<boolean> {
-  const path = `onboarding_submissions?select=id&user_id=eq.${encodeURIComponent(userId)}&status=eq.submitted&order=submitted_at.desc&limit=1`;
-  const response = await supabaseFetch(path, { method: "GET" });
-  const rows = (await response.json()) as Array<{ id: number }>;
-  return rows.length > 0;
-}
-
 export async function isUserAdmin(userId: string): Promise<boolean> {
   const path = `profiles?select=is_admin&id=eq.${encodeURIComponent(userId)}&limit=1`;
   const response = await supabaseFetch(path, { method: "GET" });

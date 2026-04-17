@@ -88,8 +88,6 @@ export type LandingContent = {
     ctaLabel: string;
     pageTitle: string;
     pageDescription: string;
-    embedUrl: string;
-    openInNewTabLabel: string;
     pendingApprovalTitle: string;
     pendingApprovalDescription: string;
     pendingApprovalCtaLabel: string;
@@ -108,15 +106,22 @@ export type LandingContent = {
     requiredForCheckoutMessage: string;
     verifyEmailMessage: string;
     emailNotConfirmedMessage: string;
+    invalidCredentialsMessage: string;
     genericError: string;
     accountLabel: string;
     planLabel: string;
+    adminPlanLabel: string;
     noPlanLabel: string;
+    profileLabel: string;
     subscribersLabel: string;
     formLabel: string;
     cancelSubscriptionLabel: string;
     cancelSubscriptionLoadingLabel: string;
     cancelSubscriptionErrorLabel: string;
+    cancelSubscriptionConfirmTitle: string;
+    cancelSubscriptionConfirmTextBeforePlan: string;
+    cancelSubscriptionConfirmTextAfterPlan: string;
+    cancelSubscriptionConfirmCancelLabel: string;
   };
   seo: {
     title: string;

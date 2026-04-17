@@ -162,9 +162,6 @@ const messages: Record<AppLocale, LandingContent> = {
       ctaLabel: "Complete form",
       pageTitle: "LRP Method Initial Assessment",
       pageDescription: "Fill in your profile and context so we can prepare your coaching plan.",
-      embedUrl:
-        "https://tally.so/embed/VLMQYl?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1",
-      openInNewTabLabel: "Open form in a new tab",
       pendingApprovalTitle: "Payment verification in progress",
       pendingApprovalDescription:
         "As soon as your payment is confirmed, your onboarding form will be unlocked automatically.",
@@ -184,15 +181,22 @@ const messages: Record<AppLocale, LandingContent> = {
       requiredForCheckoutMessage: "You need to log in before paying for this plan.",
       verifyEmailMessage: "Account created. Check your email to verify and then log in.",
       emailNotConfirmedMessage: "Please confirm your email first. Check your inbox and then try again.",
+      invalidCredentialsMessage: "The email or password is incorrect.",
       genericError: "Something went wrong. Please try again.",
       accountLabel: "Account",
       planLabel: "Plan",
+      adminPlanLabel: "Admin",
       noPlanLabel: "No active plan",
+      profileLabel: "Profile",
       subscribersLabel: "Subscribers",
       formLabel: "Form",
       cancelSubscriptionLabel: "Unsubscribe",
       cancelSubscriptionLoadingLabel: "Canceling...",
-      cancelSubscriptionErrorLabel: "We could not cancel your subscription right now."
+      cancelSubscriptionErrorLabel: "We could not cancel your subscription right now.",
+      cancelSubscriptionConfirmTitle: "Confirm unsubscribe",
+      cancelSubscriptionConfirmTextBeforePlan: "Are you sure you want to unsubscribe from",
+      cancelSubscriptionConfirmTextAfterPlan: "?",
+      cancelSubscriptionConfirmCancelLabel: "Cancel"
     },
     seo: {
       title: "LRP Method | Online Fitness Coaching & Nutrition Guidance",
@@ -361,9 +365,6 @@ const messages: Record<AppLocale, LandingContent> = {
       ctaLabel: "Completar formulario",
       pageTitle: "Evaluacion Inicial LRP Method",
       pageDescription: "Completa tu perfil y contexto para preparar tu plan de coaching.",
-      embedUrl:
-        "https://tally.so/embed/VLMQYl?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1",
-      openInNewTabLabel: "Abrir formulario en una nueva pestana",
       pendingApprovalTitle: "Estamos verificando tu pago",
       pendingApprovalDescription:
         "Apenas se confirme tu pago, se habilita automaticamente el formulario de onboarding.",
@@ -383,15 +384,22 @@ const messages: Record<AppLocale, LandingContent> = {
       requiredForCheckoutMessage: "Necesitas iniciar sesion antes de pagar este plan.",
       verifyEmailMessage: "Cuenta creada. Revisa tu email para verificar y luego inicia sesion.",
       emailNotConfirmedMessage: "Primero confirma tu email. Revisa tu bandeja y vuelve a intentar.",
+      invalidCredentialsMessage: "El email o la contraseña son incorrectos.",
       genericError: "Algo salio mal. Intentalo de nuevo.",
       accountLabel: "Cuenta",
       planLabel: "Plan",
+      adminPlanLabel: "Admin",
       noPlanLabel: "Sin plan activo",
+      profileLabel: "Perfil",
       subscribersLabel: "Subscriptores",
       formLabel: "Formulario",
       cancelSubscriptionLabel: "Desuscribirme",
       cancelSubscriptionLoadingLabel: "Cancelando...",
-      cancelSubscriptionErrorLabel: "No pudimos cancelar tu suscripcion en este momento."
+      cancelSubscriptionErrorLabel: "No pudimos cancelar tu suscripcion en este momento.",
+      cancelSubscriptionConfirmTitle: "Confirmar desuscripcion",
+      cancelSubscriptionConfirmTextBeforePlan: "Estas seguro de que quieres desuscribirte del plan",
+      cancelSubscriptionConfirmTextAfterPlan: "?",
+      cancelSubscriptionConfirmCancelLabel: "Cancelar"
     },
     seo: {
       title: "LRP Method | Coaching Fitness Online y Guia de Alimentacion",
