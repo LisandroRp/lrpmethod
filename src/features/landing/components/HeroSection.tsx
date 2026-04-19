@@ -11,7 +11,7 @@ export function HeroSection({ content }: HeroSectionProps) {
   const secondaryIsExternal = hero.secondaryAction.href.startsWith("http");
 
   return (
-    <section className="bg-hero border-subtle relative flex min-h-screen items-center overflow-hidden border-b py-16 sm:py-24">
+    <section className="bg-hero border-subtle relative flex min-h-[calc(100dvh-4rem)] items-center overflow-hidden border-b py-16 sm:py-24">
       <div
         aria-hidden="true"
         className="hero-bg-motion pointer-events-none absolute inset-0 bg-cover bg-center opacity-45 blur-md"

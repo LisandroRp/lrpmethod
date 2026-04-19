@@ -12,6 +12,7 @@ type ActionModalProps = {
   primaryLabel: string;
   onPrimary: () => void;
   primaryLoading?: boolean;
+  centerPrimaryButton?: boolean;
   secondaryLabel?: string;
   onSecondary?: () => void;
   secondaryDisabled?: boolean;
@@ -25,6 +26,7 @@ export function ActionModal({
   primaryLabel,
   onPrimary,
   primaryLoading = false,
+  centerPrimaryButton = false,
   secondaryLabel,
   onSecondary,
   secondaryDisabled = false
@@ -45,7 +47,12 @@ export function ActionModal({
               {secondaryLabel}
             </button>
           ) : null}
-          <LoadingButton type="button" isLoading={primaryLoading} className="btn-primary inline-block w-full text-center" onClick={onPrimary}>
+          <LoadingButton
+            type="button"
+            isLoading={primaryLoading}
+            className={centerPrimaryButton ? "btn-primary inline-block w-full text-center sm:mx-auto sm:w-auto sm:min-w-32" : "btn-primary inline-block w-full text-center"}
+            onClick={onPrimary}
+          >
             {primaryLabel}
           </LoadingButton>
         </div>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { HiOutlineDocumentText } from "react-icons/hi2";
 import { FaWhatsapp } from "react-icons/fa";
+import { IoMailOutline } from "react-icons/io5";
 
 import { useModal } from "@/features/contexts/ModalContext";
 import { LandingContent } from "@/features/landing/i18n/types";
@@ -43,16 +44,11 @@ export function ActivePlanPrompt({ content }: ActivePlanPromptProps) {
         >
           <FaWhatsapp className="h-6 w-6" aria-hidden="true" />
         </a>
-      ) : (
-        <button
-          type="button"
-          className="fab-button fab-whatsapp"
-          aria-label="WhatsApp"
-          title="Set NEXT_PUBLIC_WHATSAPP_NUMBER to enable WhatsApp."
-        >
-          <FaWhatsapp className="h-6 w-6" aria-hidden="true" />
-        </button>
-      )}
+      ) : null}
+
+      <a href={content.contact.emailHref} className="fab-button fab-email" aria-label={content.contact.emailLabel} title={content.contact.emailLabel}>
+        <IoMailOutline className="h-6 w-6" aria-hidden="true" />
+      </a>
     </div>
   );
 }

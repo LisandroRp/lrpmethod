@@ -55,6 +55,13 @@ const messages: Record<AppLocale, LandingContent> = {
       kicker: "Plans",
       title: "Choose your coaching tier",
       featuredLabel: "Most selected",
+      activePlanCtaLabel: "Current plan",
+      checkoutErrorMessage: "We couldn't start checkout right now. Please try again.",
+      premiumComingSoonLabel: "Coming soon",
+      alreadySubscribedModalTitle: "You already have an active plan",
+      alreadySubscribedModalTextBeforePlan: "You are already subscribed to",
+      alreadySubscribedModalTextAfterPlan: ". Unsubscribe first before switching to a new plan.",
+      alreadySubscribedModalOkLabel: "OK",
       plans: [
         {
           code: "basic",
@@ -258,6 +265,13 @@ const messages: Record<AppLocale, LandingContent> = {
       kicker: "Planes",
       title: "Elige tu nivel de coaching",
       featuredLabel: "El mas elegido",
+      activePlanCtaLabel: "Plan comprado",
+      checkoutErrorMessage: "No pudimos iniciar el checkout en este momento. Intentalo de nuevo.",
+      premiumComingSoonLabel: "Proximamente",
+      alreadySubscribedModalTitle: "Ya tienes un plan activo",
+      alreadySubscribedModalTextBeforePlan: "Ya estas suscripto al plan",
+      alreadySubscribedModalTextAfterPlan: ". Desuscribite primero antes de suscribirte a otro plan.",
+      alreadySubscribedModalOkLabel: "OK",
       plans: [
         {
           code: "basic",

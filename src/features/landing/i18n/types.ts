@@ -51,6 +51,13 @@ export type LandingContent = {
     kicker: string;
     title: string;
     featuredLabel: string;
+    activePlanCtaLabel: string;
+    checkoutErrorMessage: string;
+    premiumComingSoonLabel: string;
+    alreadySubscribedModalTitle: string;
+    alreadySubscribedModalTextBeforePlan: string;
+    alreadySubscribedModalTextAfterPlan: string;
+    alreadySubscribedModalOkLabel: string;
     plans: PlanTier[];
   };
   benefits: {

@@ -65,6 +65,7 @@ export default async function ProfilePage() {
     return acc;
   }, {});
 
+  const ddClassNames="text-primary mt-1 text-sm font-medium sm:text-base truncate"
   const displayedPlanName = activePlanCode ? planNameByCode[activePlanCode] ?? profileCopy.noPlan : profileCopy.noPlan;
   const fullName = user.user_metadata?.full_name?.trim() || profileCopy.noName;
   const email = user.email?.trim() || profileCopy.noEmail;
@@ -76,7 +77,7 @@ export default async function ProfilePage() {
       <main className="px-4 py-8 sm:px-6 sm:py-10">
         <div className="mx-auto w-full max-w-3xl">
           <div className="flex flex-row gap-5">
-          <Avatar {...{content}} containerClassName="h-20 w-20" iconClassName="h-14 w-14"/>
+          <Avatar {...{content}} containerClassName="h-20 w-20 flex-shrink-0" iconClassName="h-14 w-14"/>
           <div>
           <header className="mb-5">
             <p className="text-accent text-xs font-semibold tracking-[0.2em] uppercase">{profileCopy.sectionKicker}</p>
@@ -87,22 +88,22 @@ export default async function ProfilePage() {
             <dl className="grid gap-4 sm:grid-cols-2">
               <div>
                 <dt className="text-accent text-xs">{profileCopy.fullName}</dt>
-                <dd className="text-primary mt-1 text-sm font-medium sm:text-base">{fullName}</dd>
+                <dd className={ddClassNames}>{fullName}</dd>
               </div>
 
               <div>
                 <dt className="text-accent text-xs">{profileCopy.email}</dt>
-                <dd className="text-primary mt-1 text-sm font-medium sm:text-base">{email}</dd>
+                <dd className={ddClassNames}>{email}</dd>
               </div>
 
               <div>
                 <dt className="text-accent text-xs">{profileCopy.plan}</dt>
-                <dd className="text-primary mt-1 text-sm font-semibold sm:text-base">{displayedPlanName}</dd>
+                <dd className={ddClassNames}>{displayedPlanName}</dd>
               </div>
 
               <div>
                 <dt className="text-accent text-xs">{profileCopy.onboarding}</dt>
-                <dd className="text-primary mt-1 text-sm font-semibold sm:text-base">
+                <dd className={ddClassNames}>
                   {onboardingSubmitted ? profileCopy.onboardingSubmitted : profileCopy.onboardingPending}
                 </dd>
               </div>

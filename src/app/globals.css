@@ -194,6 +194,15 @@ a {
   opacity: 0.92;
 }
 
+.btn-static,
+.btn-static:hover {
+  border-color: var(--color-border-subtle);
+  cursor: not-allowed;
+  filter: none;
+  opacity: 1;
+  transform: none;
+}
+
 .dot-accent {
   background-color: var(--color-accent);
   border-radius: 999px;
@@ -564,5 +573,16 @@ a {
 
 .fab-whatsapp:hover {
   background-color: var(--color-whatsapp-hover);
+  filter: brightness(1.03);
+}
+
+.fab-email {
+  background-color: color-mix(in oklch, var(--color-surface) 88%, transparent);
+  color: var(--color-accent);
+  border-color: color-mix(in oklch, var(--color-accent) 65%, var(--color-border-subtle));
+}
+
+.fab-email:hover {
+  background-color: color-mix(in oklch, var(--color-surface) 76%, transparent);
   filter: brightness(1.03);
 }
