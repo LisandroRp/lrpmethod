@@ -25,7 +25,7 @@ type AccountContextValue = {
   user: AccountUser | null;
   activePlanCode: PlanCode | null;
   onboardingSubmitted: boolean;
-  refreshAccount: () => Promise<void>;
+  refreshAccount: (options?: { silent?: boolean }) => Promise<void>;
   clearAccount: () => void;
 };
 
@@ -37,14 +37,21 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const [activePlanCode, setActivePlanCode] = useState<PlanCode | null>(null);
   const [onboardingSubmitted, setOnboardingSubmitted] = useState(false);
 
-  const refreshAccount = useCallback(async () => {
-    setIsLoading(true);
+  const refreshAccount = useCallback(async (options?: { silent?: boolean }) => {
+    const shouldSetLoading = !options?.silent;
+    if (shouldSetLoading) {
+      setIsLoading(true);
+    }
+
     try {
       const response = await fetch("/api/auth/account", { method: "GET", cache: "no-store" });
       if (!response.ok) {
         setUser(null);
         setActivePlanCode(null);
         setOnboardingSubmitted(false);
+        if (response.status === 401) {
+          await fetch("/api/auth/logout", { method: "POST" });
+        }
         return;
       }
 
@@ -64,7 +71,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       setActivePlanCode(null);
       setOnboardingSubmitted(false);
     } finally {
-      setIsLoading(false);
+      if (shouldSetLoading) {
+        setIsLoading(false);
+      }
     }
   }, []);
 

@@ -280,6 +280,45 @@ a {
   background-color: color-mix(in oklch, var(--color-accent) 10%, transparent);
 }
 
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  .routine-print {
+    background-color: var(--color-light) !important;
+    color: var(--color-ink-strong) !important;
+  }
+
+  .routine-print .text-primary,
+  .routine-print .text-accent,
+  .routine-print .text-muted,
+  .routine-print .text-faint,
+  .routine-print .text-strong-muted {
+    color: var(--color-ink-strong) !important;
+  }
+
+  .routine-print .panel,
+  .routine-print .card,
+  .routine-print .bg-canvas {
+    background-color: transparent !important;
+    border-color: color-mix(in oklch, var(--color-ink-strong) 22%, transparent) !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  .routine-print .panel,
+  .routine-print .card,
+  .routine-print .card > div {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .routine-print .routine-print-action {
+    display: none !important;
+  }
+}
+
 .user-menu-trigger {
   display: inline-flex;
   align-items: center;
@@ -585,4 +624,17 @@ a {
 .fab-email:hover {
   background-color: color-mix(in oklch, var(--color-surface) 76%, transparent);
   filter: brightness(1.03);
+}
+
+.modal-backdrop {
+  background-color: color-mix(in oklch, var(--color-canvas) 65%, transparent);
+}
+
+.routine-guide-overlay {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in oklch, var(--color-canvas) 68%, transparent) 62%,
+    var(--color-canvas) 100%
+  );
 }

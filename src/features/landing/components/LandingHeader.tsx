@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { TbLogout2 } from "react-icons/tb";
 
@@ -51,6 +52,8 @@ function scrollToHash(event: MouseEvent<HTMLAnchorElement>, href: string) {
 export function LandingHeader({ content, showSectionLinks = true }: LandingHeaderProps) {
   const { user: accountUser, activePlanCode, isLoading: isAccountLoading, refreshAccount, clearAccount } = useAccount();
   const { openUnsubscribeModal } = useModal();
+  const pathname = usePathname();
+  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -103,6 +106,10 @@ export function LandingHeader({ content, showSectionLinks = true }: LandingHeade
     };
   }, [isUserMenuOpen]);
 
+  useEffect(() => {
+    void refreshAccount({ silent: true });
+  }, [pathname, refreshAccount]);
+
   function handleNavClick(event: MouseEvent<HTMLAnchorElement>, href: string) {
     if (!href.startsWith("#")) {
       return;
@@ -120,6 +127,12 @@ export function LandingHeader({ content, showSectionLinks = true }: LandingHeade
 
       clearAccount();
       setIsUserMenuOpen(false);
+
+      const isPrivateRoute =
+        pathname === "/profile" || pathname === "/my-plan" || pathname.startsWith("/onboarding") || pathname.startsWith("/admin");
+      if (isPrivateRoute) {
+        router.push("/");
+      }
     } finally {
       setIsLoggingOut(false);
     }
@@ -180,6 +193,9 @@ export function LandingHeader({ content, showSectionLinks = true }: LandingHeade
                   <div className="profile-menu-actions mt-3">
                     <Link href="/profile" className="profile-menu-action" onClick={() => setIsUserMenuOpen(false)}>
                       {content.auth.profileLabel}
+                    </Link>
+                    <Link href="/my-plan" className="profile-menu-action" onClick={() => setIsUserMenuOpen(false)}>
+                      {content.auth.myPlanLabel}
                     </Link>
                     {activePlanCode ? (
                       <Link href="/onboarding" className="profile-menu-action" onClick={() => setIsUserMenuOpen(false)}>
@@ -273,6 +289,9 @@ export function LandingHeader({ content, showSectionLinks = true }: LandingHeade
                 <div className="profile-menu-actions mt-2 w-full">
                   <Link href="/profile" className="profile-menu-action w-full" onClick={() => setIsMobileMenuOpen(false)}>
                     {content.auth.profileLabel}
+                  </Link>
+                  <Link href="/my-plan" className="profile-menu-action w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                    {content.auth.myPlanLabel}
                   </Link>
                   {activePlanCode ? (
                     <Link href="/onboarding" className="profile-menu-action w-full" onClick={() => setIsMobileMenuOpen(false)}>

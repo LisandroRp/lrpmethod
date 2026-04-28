@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { ChangePasswordForm } from "@/features/profile/components/ChangePasswordForm";
 import { LandingHeader } from "@/features/landing/components/LandingHeader";
 import { getLandingContent } from "@/features/landing/i18n/messages";
 import { AppLocale } from "@/features/landing/i18n/types";
@@ -23,7 +24,20 @@ function getProfileCopy(locale: AppLocale) {
       noEmail: "Sin email",
       noPlan: "Sin plan activo",
       onboardingSubmitted: "Completado",
-      onboardingPending: "Pendiente"
+      onboardingPending: "Pendiente",
+      changePasswordTitle: "Cambiar contraseña",
+      changePasswordDescription: "Actualiza tu contraseña usando tu contraseña actual.",
+      changePasswordOpenLabel: "Abrir",
+      changePasswordCloseLabel: "Cerrar",
+      currentPasswordLabel: "Contraseña actual",
+      newPasswordLabel: "Nueva contraseña",
+      confirmNewPasswordLabel: "Confirmar nueva contraseña",
+      changePasswordSubmitLabel: "Actualizar contraseña",
+      changePasswordLoadingLabel: "Actualizando...",
+      changePasswordSuccessMessage: "Contraseña actualizada correctamente.",
+      changePasswordMismatchMessage: "Las contraseñas no coinciden.",
+      changePasswordInvalidCurrentPasswordMessage: "La contraseña actual es incorrecta.",
+      changePasswordGenericErrorMessage: "No pudimos actualizar la contraseña en este momento."
     };
   }
 
@@ -39,7 +53,20 @@ function getProfileCopy(locale: AppLocale) {
     noEmail: "No email",
     noPlan: "No active plan",
     onboardingSubmitted: "Completed",
-    onboardingPending: "Pending"
+    onboardingPending: "Pending",
+    changePasswordTitle: "Change password",
+    changePasswordDescription: "Update your password using your current password.",
+    changePasswordOpenLabel: "Open",
+    changePasswordCloseLabel: "Close",
+    currentPasswordLabel: "Current password",
+    newPasswordLabel: "New password",
+    confirmNewPasswordLabel: "Confirm new password",
+    changePasswordSubmitLabel: "Update password",
+    changePasswordLoadingLabel: "Updating...",
+    changePasswordSuccessMessage: "Password updated successfully.",
+    changePasswordMismatchMessage: "Passwords do not match.",
+    changePasswordInvalidCurrentPasswordMessage: "Your current password is incorrect.",
+    changePasswordGenericErrorMessage: "We could not update your password right now."
   };
 }
 
@@ -109,6 +136,23 @@ export default async function ProfilePage() {
               </div>
             </dl>
           </section>
+          <ChangePasswordForm
+            copy={{
+              title: profileCopy.changePasswordTitle,
+              description: profileCopy.changePasswordDescription,
+              openLabel: profileCopy.changePasswordOpenLabel,
+              closeLabel: profileCopy.changePasswordCloseLabel,
+              currentPasswordLabel: profileCopy.currentPasswordLabel,
+              newPasswordLabel: profileCopy.newPasswordLabel,
+              confirmPasswordLabel: profileCopy.confirmNewPasswordLabel,
+              submitLabel: profileCopy.changePasswordSubmitLabel,
+              loadingLabel: profileCopy.changePasswordLoadingLabel,
+              successMessage: profileCopy.changePasswordSuccessMessage,
+              mismatchMessage: profileCopy.changePasswordMismatchMessage,
+              invalidCurrentPasswordMessage: profileCopy.changePasswordInvalidCurrentPasswordMessage,
+              genericErrorMessage: profileCopy.changePasswordGenericErrorMessage
+            }}
+          />
           </div>
           </div>
         </div>

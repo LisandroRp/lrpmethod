@@ -24,6 +24,10 @@ type AuthSignupResponse = {
 };
 
 type AuthLoginResponse = AuthSession;
+type AuthVerifyResponse = {
+  access_token?: string;
+  refresh_token?: string;
+};
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -79,6 +83,53 @@ export async function signInWithEmailPassword(input: { email: string; password: 
   });
 
   return (await response.json()) as AuthLoginResponse;
+}
+
+export async function sendPasswordRecoveryEmail(input: { email: string; redirectTo: string }) {
+  const response = await supabaseAuthFetch(`recover?redirect_to=${encodeURIComponent(input.redirectTo)}`, {
+    method: "POST",
+    body: JSON.stringify({
+      email: input.email
+    })
+  });
+
+  return response.ok;
+}
+
+export async function verifyRecoveryToken(input: { tokenHash: string }) {
+  const response = await supabaseAuthFetch("verify", {
+    method: "POST",
+    body: JSON.stringify({
+      type: "recovery",
+      token_hash: input.tokenHash
+    })
+  });
+
+  return (await response.json()) as AuthVerifyResponse;
+}
+
+export async function updatePasswordWithAccessToken(input: { accessToken: string; password: string }) {
+  ensureAuthEnv();
+
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    method: "PUT",
+    headers: {
+      apikey: SUPABASE_ANON_KEY as string,
+      Authorization: `Bearer ${input.accessToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      password: input.password
+    }),
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Supabase password update failed (${response.status}): ${errorBody}`);
+  }
+
+  return response.ok;
 }
 
 export async function getUserFromAccessToken(accessToken: string): Promise<AuthUser | null> {

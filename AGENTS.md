@@ -152,6 +152,10 @@ Contextual skill sources (use only when applicable):
 
 If `docs/rules/` exists in the target project, those rules become mandatory for that project as well.
 
+Project-specific mandatory rule:
+
+- `docs/rules/exercise-catalog-governance.md` (exercise catalog normalization, dedupe protocol, routine SQL safety, muscle-group mapping)
+
 Violation of any applicable rule is a framework breach even if the code compiles.
 
 ## 6. Skills and Tooling Router
