@@ -20,8 +20,8 @@ function parseGuideBlocks(content: string): RoutineGuideBlock[] {
   while (index < lines.length) {
     const line = lines[index];
 
-    if (line.startsWith("## ")) {
-      blocks.push({ type: "heading", content: line.replace(/^##\s+/, "") });
+    if (/^#{1,3}\s+/.test(line)) {
+      blocks.push({ type: "heading", content: line.replace(/^#{1,3}\s+/, "") });
       index += 1;
       continue;
     }

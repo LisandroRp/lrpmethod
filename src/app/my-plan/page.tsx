@@ -58,7 +58,7 @@ export default async function MyPlanPage() {
 
   const [subscription, basicPlans] = await Promise.all([
     findCurrentActiveSubscriptionByUserId(user.id),
-    listBasicRoutineTemplates()
+    listBasicRoutineTemplates(locale)
   ]);
   const activePlanCode = subscription?.plan_code ?? null;
   const hasCustomPlanAssigned = activePlanCode === "intermediate" || activePlanCode === "premium";

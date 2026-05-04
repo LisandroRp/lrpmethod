@@ -54,7 +54,17 @@ function BasicPlansSection({
           <article key={plan.id} className="card flex flex-col justify-between">
             <div>
             <h3 className="text-sm font-semibold">{plan.title}</h3>
-            <p className="text-muted mt-2 text-sm">{plan.description}</p>
+            <p
+              className="text-muted mt-2 text-sm"
+              style={{
+                display: "-webkit-box",
+                WebkitLineClamp: 4,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden"
+              }}
+            >
+              {plan.description}
+            </p>
             </div>
             {hasBasicPlansAccess ? (
               <Link href={`/my-plan/${plan.id}`} className="btn-primary mt-4 block w-full text-center">
@@ -105,9 +115,9 @@ export function MyPlanSections({ copy, basicPlans, hasCustomPlanAssigned, hasBas
     <>
       <div className="lg:hidden">
         <label className="text-accent mb-2 block text-xs font-semibold uppercase tracking-[0.12em]">{copy.sectionSwitchLabel}</label>
-        <div className="btn-primary rounded-xl px-3 py-2">
+        <div className="bg-canvas hover:border-accent rounded-xl border border-[color:var(--color-accent)] px-3 py-2 transition-colors">
           <select
-            className="w-full cursor-pointer bg-transparent text-sm font-semibold outline-none"
+            className="text-primary w-full cursor-pointer bg-transparent text-sm font-semibold outline-none"
             value={selectedSection}
             onChange={(event) => setSelectedSection(event.target.value as SectionTab)}
           >

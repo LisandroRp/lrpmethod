@@ -6,6 +6,7 @@ import { LandingHeader } from "@/features/landing/components/LandingHeader";
 import { getLandingContent } from "@/features/landing/i18n/messages";
 import { AppLocale } from "@/features/landing/i18n/types";
 import { DownloadRoutinePdfButton } from "@/features/my-plan/components/DownloadRoutinePdfButton";
+import { RoutineExerciseCard } from "@/features/my-plan/components/RoutineExerciseCard";
 import { RoutineGuidePanel } from "@/features/my-plan/components/RoutineGuidePanel";
 import { findCurrentActiveSubscriptionByUserId, findRoutineTemplateDetailById } from "@/lib/server/supabase-admin";
 import { getCurrentAuthenticatedUser } from "@/lib/server/supabase-auth";
@@ -34,7 +35,14 @@ function getRoutineDetailCopy(locale: AppLocale) {
       downloadPdfLabel: "Descargar PDF",
       guideTitle: "Guia de la rutina",
       guideExpandLabel: "Ver mas",
-      guideCollapseLabel: "Ver menos"
+      guideCollapseLabel: "Ver menos",
+      exerciseExpandLabel: "Ver mas",
+      exerciseCollapseLabel: "Ver menos",
+      overviewLabel: "Overview",
+      instructionsLabel: "Instrucciones",
+      tipsLabel: "Tips",
+      videoCtaLabel: "Ver video",
+      openExternalLabel: "Se abre en una nueva pestaña"
     };
   }
 
@@ -55,7 +63,14 @@ function getRoutineDetailCopy(locale: AppLocale) {
     downloadPdfLabel: "Download PDF",
     guideTitle: "Routine guide",
     guideExpandLabel: "Show more",
-    guideCollapseLabel: "Show less"
+    guideCollapseLabel: "Show less",
+    exerciseExpandLabel: "Show more",
+    exerciseCollapseLabel: "Show less",
+    overviewLabel: "Overview",
+    instructionsLabel: "Instructions",
+    tipsLabel: "Tips",
+    videoCtaLabel: "View video",
+    openExternalLabel: "Opens in a new tab"
   };
 }
 
@@ -87,6 +102,11 @@ type RoutineExercise = {
   id: number;
   name: string;
   description: string | null;
+  overview: string | null;
+  instructions: string | null;
+  tips: string | null;
+  videoUrl: string | null;
+  sourceUrl: string | null;
   primaryMuscleName: string | null;
   isCombined: boolean;
   combinedGroup: number | null;
@@ -182,7 +202,7 @@ export default async function RoutineDetailPage({ params }: RoutineDetailPagePro
 
   const [subscription, routine] = await Promise.all([
     findCurrentActiveSubscriptionByUserId(user.id),
-    findRoutineTemplateDetailById(numericRoutineId)
+    findRoutineTemplateDetailById(numericRoutineId, locale)
   ]);
 
   if (!routine) {
@@ -281,26 +301,28 @@ export default async function RoutineDetailPage({ params }: RoutineDetailPagePro
                                   ].filter(Boolean);
 
                                   return (
-                                    <div
+                                    <RoutineExerciseCard
                                       key={`${day.id}-${exercise.orderIndex}-${exercise.id}`}
-                                      className="bg-canvas border-subtle rounded-xl border p-3"
-                                    >
-                                      <h4 className="text-accent text-sm font-semibold">{exercise.name}</h4>
-                                      {exercise.primaryMuscleName ? (
-                                        <p className="text-muted mt-1 text-xs">
-                                          {copy.primaryMuscleLabel}: <span className="text-primary">{exercise.primaryMuscleName}</span>
-                                        </p>
-                                      ) : null}
-                                      {summaryItems.length ? (
-                                        <p className="text-primary mt-2 text-sm font-medium">{summaryItems.join(" | ")}</p>
-                                      ) : null}
-                                      {exercise.description ? <p className="text-muted mt-2 text-sm">{exercise.description}</p> : null}
-                                      {exercise.notes ? (
-                                        <p className="text-muted mt-2 text-sm">
-                                          <span className="text-primary font-medium">{copy.notesLabel}:</span> {exercise.notes}
-                                        </p>
-                                      ) : null}
-                                    </div>
+                                      heading={exercise.name}
+                                      primaryMuscleLabel={copy.primaryMuscleLabel}
+                                      primaryMuscleName={exercise.primaryMuscleName}
+                                      summary={summaryItems.length ? summaryItems.join(" | ") : null}
+                                      description={exercise.description}
+                                      overview={exercise.overview}
+                                      instructions={exercise.instructions}
+                                      tips={exercise.tips}
+                                      notesLabel={copy.notesLabel}
+                                      notes={exercise.notes}
+                                      expandLabel={copy.exerciseExpandLabel}
+                                      collapseLabel={copy.exerciseCollapseLabel}
+                                      overviewLabel={copy.overviewLabel}
+                                      instructionsLabel={copy.instructionsLabel}
+                                      tipsLabel={copy.tipsLabel}
+                                      videoCtaLabel={copy.videoCtaLabel}
+                                      openExternalLabel={copy.openExternalLabel}
+                                      videoUrl={exercise.videoUrl}
+                                      sourceUrl={exercise.sourceUrl}
+                                    />
                                   );
                                 })}
                               </div>
@@ -319,27 +341,28 @@ export default async function RoutineDetailPage({ params }: RoutineDetailPagePro
                         ].filter(Boolean);
 
                         return (
-                          <article key={`${day.id}-${exercise.orderIndex}-${exercise.id}`} className="card">
-                            <h3 className="text-accent text-sm font-semibold">
-                              {exercise.orderIndex}. {exercise.name}
-                            </h3>
-                            {exercise.primaryMuscleName ? (
-                              <p className="text-muted mt-1 text-xs">
-                                {copy.primaryMuscleLabel}: <span className="text-primary">{exercise.primaryMuscleName}</span>
-                              </p>
-                            ) : null}
-
-                            {summaryItems.length ? (
-                              <p className="text-primary mt-2 text-sm font-medium">{summaryItems.join(" | ")}</p>
-                            ) : null}
-
-                            {exercise.description ? <p className="text-muted mt-2 text-sm">{exercise.description}</p> : null}
-                            {exercise.notes ? (
-                              <p className="text-muted mt-2 text-sm">
-                                <span className="text-primary font-medium">{copy.notesLabel}:</span> {exercise.notes}
-                              </p>
-                            ) : null}
-                          </article>
+                          <RoutineExerciseCard
+                            key={`${day.id}-${exercise.orderIndex}-${exercise.id}`}
+                            heading={`${exercise.orderIndex}. ${exercise.name}`}
+                            primaryMuscleLabel={copy.primaryMuscleLabel}
+                            primaryMuscleName={exercise.primaryMuscleName}
+                            summary={summaryItems.length ? summaryItems.join(" | ") : null}
+                            description={exercise.description}
+                            overview={exercise.overview}
+                            instructions={exercise.instructions}
+                            tips={exercise.tips}
+                            notesLabel={copy.notesLabel}
+                            notes={exercise.notes}
+                            expandLabel={copy.exerciseExpandLabel}
+                            collapseLabel={copy.exerciseCollapseLabel}
+                            overviewLabel={copy.overviewLabel}
+                            instructionsLabel={copy.instructionsLabel}
+                            tipsLabel={copy.tipsLabel}
+                            videoCtaLabel={copy.videoCtaLabel}
+                            openExternalLabel={copy.openExternalLabel}
+                            videoUrl={exercise.videoUrl}
+                            sourceUrl={exercise.sourceUrl}
+                          />
                         );
                       })}
                     </div>
