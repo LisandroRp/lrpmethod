@@ -8,13 +8,24 @@ import { AppLocale } from "@/features/landing/i18n/types";
 import { DownloadRoutinePdfButton } from "@/features/my-plan/components/DownloadRoutinePdfButton";
 import { RoutineExerciseCard } from "@/features/my-plan/components/RoutineExerciseCard";
 import { RoutineGuidePanel } from "@/features/my-plan/components/RoutineGuidePanel";
-import { findCurrentActiveSubscriptionByUserId, findRoutineTemplateDetailById } from "@/lib/server/supabase-admin";
+import { findCurrentActiveSubscriptionByUserId, findRoutineTemplateDetailById, isUserAdmin } from "@/lib/server/supabase-admin";
 import { getCurrentAuthenticatedUser } from "@/lib/server/supabase-auth";
 import { getRequestLocale } from "@/lib/i18n/get-request-locale";
 
 type RoutineDetailPageProps = {
   params: Promise<{ routineId: string }>;
+  searchParams?: Promise<{
+    backTo?: string;
+  }>;
 };
+
+function getSafeBackHref(value: string | undefined) {
+  if (!value?.startsWith("/admin/subscribers/")) {
+    return "/my-plan";
+  }
+
+  return value;
+}
 
 function getRoutineDetailCopy(locale: AppLocale) {
   if (locale === "es") {
@@ -27,7 +38,6 @@ function getRoutineDetailCopy(locale: AppLocale) {
       primaryMuscleLabel: "Musculo principal",
       restLabel: "Descanso",
       rirLabel: "RIR",
-      tempoLabel: "Tempo",
       notesLabel: "Notas",
       secondsSuffix: "seg",
       noDaysMessage: "Esta rutina todavia no tiene dias cargados.",
@@ -55,7 +65,6 @@ function getRoutineDetailCopy(locale: AppLocale) {
     primaryMuscleLabel: "Primary muscle",
     restLabel: "Rest",
     rirLabel: "RIR",
-    tempoLabel: "Tempo",
     notesLabel: "Notes",
     secondsSuffix: "sec",
     noDaysMessage: "This routine has no days loaded yet.",
@@ -118,7 +127,6 @@ type RoutineExercise = {
   repsMax: number | null;
   restSeconds: number | null;
   rir: number | null;
-  tempo: string | null;
   notes: string | null;
 };
 
@@ -185,10 +193,12 @@ function buildDayRenderItems(exercises: RoutineExercise[]) {
   return items;
 }
 
-export default async function RoutineDetailPage({ params }: RoutineDetailPageProps) {
-  const [{ routineId }, locale] = await Promise.all([params, getRequestLocale()]);
+export default async function RoutineDetailPage({ params, searchParams }: RoutineDetailPageProps) {
+  const [{ routineId }, locale, resolvedSearchParams] = await Promise.all([params, getRequestLocale(), searchParams]);
   const content = getLandingContent(locale);
   const copy = getRoutineDetailCopy(locale);
+  const backHref = getSafeBackHref(resolvedSearchParams?.backTo);
+  const backLabel = backHref === "/my-plan" ? copy.backLabel : "Volver a rutinas subidas";
 
   const numericRoutineId = Number(routineId);
   if (!Number.isInteger(numericRoutineId) || numericRoutineId <= 0) {
@@ -200,9 +210,10 @@ export default async function RoutineDetailPage({ params }: RoutineDetailPagePro
     redirect("/?auth=1");
   }
 
-  const [subscription, routine] = await Promise.all([
+  const [subscription, routine, admin] = await Promise.all([
     findCurrentActiveSubscriptionByUserId(user.id),
-    findRoutineTemplateDetailById(numericRoutineId, locale)
+    findRoutineTemplateDetailById(numericRoutineId, locale),
+    isUserAdmin(user.id)
   ]);
 
   if (!routine) {
@@ -211,8 +222,8 @@ export default async function RoutineDetailPage({ params }: RoutineDetailPagePro
 
   const hasActiveSubscription = Boolean(subscription);
   const canDownloadRoutinePdf = subscription?.plan_code === "intermediate" || subscription?.plan_code === "premium";
-  const canAccessBasicRoutine = routine.isBasic && hasActiveSubscription;
-  const canAccessPersonalRoutine = !routine.isBasic && routine.ownerUserId === user.id;
+  const canAccessBasicRoutine = routine.isBasic && (hasActiveSubscription || admin);
+  const canAccessPersonalRoutine = !routine.isBasic && (routine.ownerUserId === user.id || admin);
 
   if (!canAccessBasicRoutine && !canAccessPersonalRoutine) {
     redirect("/my-plan");
@@ -228,11 +239,11 @@ export default async function RoutineDetailPage({ params }: RoutineDetailPagePro
         <div className="mx-auto w-full max-w-4xl">
           <div className="flex items-start justify-between gap-3">
             <Link
-              href="/my-plan"
+              href={backHref}
               className="text-accent group routine-print-action inline-flex items-center gap-1.5 text-sm font-medium transition-colors hover:text-accent-hover"
             >
               <TbArrowLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span className="group-hover:underline group-hover:decoration-2 group-hover:underline-offset-4">{copy.backLabel}</span>
+              <span className="group-hover:underline group-hover:decoration-2 group-hover:underline-offset-4">{backLabel}</span>
             </Link>
             {canDownloadRoutinePdf ? (
               <div className="routine-print-action">
@@ -296,8 +307,7 @@ export default async function RoutineDetailPage({ params }: RoutineDetailPagePro
                                   const summaryItems = [
                                     formatSummaryItem(copy.setsRepsLabel, `${exercise.sets} x ${reps}`),
                                     formatSummaryItem(copy.restLabel, rest),
-                                    formatSummaryItem(copy.rirLabel, exercise.rir === null ? null : `${exercise.rir}`),
-                                    formatSummaryItem(copy.tempoLabel, exercise.tempo)
+                                    formatSummaryItem(copy.rirLabel, exercise.rir === null ? null : `${exercise.rir}`)
                                   ].filter(Boolean);
 
                                   return (
@@ -336,8 +346,7 @@ export default async function RoutineDetailPage({ params }: RoutineDetailPagePro
                         const summaryItems = [
                           formatSummaryItem(copy.setsRepsLabel, `${exercise.sets} x ${reps}`),
                           formatSummaryItem(copy.restLabel, rest),
-                          formatSummaryItem(copy.rirLabel, exercise.rir === null ? null : `${exercise.rir}`),
-                          formatSummaryItem(copy.tempoLabel, exercise.tempo)
+                          formatSummaryItem(copy.rirLabel, exercise.rir === null ? null : `${exercise.rir}`)
                         ].filter(Boolean);
 
                         return (

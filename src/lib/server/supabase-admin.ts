@@ -1,7 +1,25 @@
+import type { RoutineImportDraft } from "@/lib/routines/routine-import-schema";
+
 type JsonObject = Record<string, unknown>;
 type PlanCode = "basic" | "intermediate" | "premium";
 type SubscriptionStatus = "active" | "pending" | "canceled";
 type AppLocale = "en" | "es";
+
+type RoutineDayExerciseInsertRow = {
+  routine_day_id: number;
+  exercise_id: number;
+  order_index: number;
+  is_combined: boolean;
+  combined_group: number | null;
+  combined_index: number | null;
+  combined_label: string | null;
+  sets: number;
+  reps_min: number | null;
+  reps_max: number | null;
+  rest_seconds: number | null;
+  rir: number | null;
+  notes: string | null;
+};
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -179,6 +197,718 @@ export async function isUserAdmin(userId: string): Promise<boolean> {
   return Boolean(rows[0]?.is_admin);
 }
 
+export async function findProfileById(userId: string) {
+  const path = `profiles?select=id,email,full_name,is_admin,avatar_url&id=eq.${encodeURIComponent(userId)}&limit=1`;
+  const response = await supabaseFetch(path, { method: "GET" });
+  const rows = (await response.json()) as Array<{
+    id: string;
+    email: string | null;
+    full_name: string | null;
+    is_admin: boolean | null;
+    avatar_url: string | null;
+  }>;
+
+  if (!rows.length) {
+    return null;
+  }
+
+  const row = rows[0];
+  return {
+    id: row.id,
+    email: row.email,
+    fullName: row.full_name,
+    isAdmin: Boolean(row.is_admin),
+    avatarUrl: row.avatar_url
+  };
+}
+
+function slugifyRoutineName(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 80);
+}
+
+async function postSupabaseRows<T>(path: string, body: unknown): Promise<T[]> {
+  const response = await supabaseFetch(path, {
+    method: "POST",
+    headers: {
+      Prefer: "return=representation"
+    },
+    body: JSON.stringify(body)
+  });
+
+  return (await response.json()) as T[];
+}
+
+async function patchSupabaseRows(path: string, body: unknown) {
+  await supabaseFetch(path, {
+    method: "PATCH",
+    headers: {
+      Prefer: "return=minimal"
+    },
+    body: JSON.stringify(body)
+  });
+}
+
+async function deleteSupabaseRows(path: string) {
+  await supabaseFetch(path, {
+    method: "DELETE",
+    headers: {
+      Prefer: "return=minimal"
+    }
+  });
+}
+
+function collectRoutineExerciseIds(draft: RoutineImportDraft) {
+  const ids = new Set<number>();
+
+  for (const day of draft.routine.days) {
+    for (const item of day.items) {
+      if (item.type === "single") {
+        ids.add(item.exerciseId);
+      } else {
+        for (const exercise of item.exercises) {
+          ids.add(exercise.exerciseId);
+        }
+      }
+    }
+  }
+
+  return Array.from(ids);
+}
+
+async function listActiveExercisesByIds(exerciseIds: number[]) {
+  if (!exerciseIds.length) {
+    return new Map<
+      number,
+      {
+        id: number;
+        name: string;
+        description: string | null;
+        overview: string | null;
+        instructions: string | null;
+        tips: string | null;
+        videoUrl: string | null;
+        sourceUrl: string | null;
+      }
+    >();
+  }
+
+  const exercisePath = `exercises?select=id,name,description,overview,instructions,tips,video_url,source_url&is_active=eq.true&id=in.(${exerciseIds.join(",")})`;
+  const exerciseResponse = await supabaseFetch(exercisePath, { method: "GET" });
+  const activeExercises = (await exerciseResponse.json()) as Array<{
+    id: number | string;
+    name: string;
+    description: string | null;
+    overview: string | null;
+    instructions: string | null;
+    tips: string | null;
+    video_url: string | null;
+    source_url: string | null;
+  }>;
+
+  return new Map(
+    activeExercises
+      .map((exercise) => {
+        const id = Number(exercise.id);
+        return Number.isFinite(id)
+          ? [
+              id,
+              {
+                id,
+                name: exercise.name,
+                description: exercise.description,
+                overview: exercise.overview,
+                instructions: exercise.instructions,
+                tips: exercise.tips,
+                videoUrl: exercise.video_url,
+                sourceUrl: exercise.source_url
+              }
+            ]
+          : null;
+      })
+      .filter(
+        (
+          exercise
+        ): exercise is [
+          number,
+          {
+            id: number;
+            name: string;
+            description: string | null;
+            overview: string | null;
+            instructions: string | null;
+            tips: string | null;
+            videoUrl: string | null;
+            sourceUrl: string | null;
+          }
+        ] => exercise !== null
+      )
+  );
+}
+
+export type AdminExerciseSearchResult = {
+  id: number;
+  name: string;
+  description: string | null;
+  overview: string | null;
+  instructions: string | null;
+  tips: string | null;
+  videoUrl: string | null;
+  sourceUrl: string | null;
+};
+
+type ExerciseTranslationSearchRow = {
+  exercise_id: number | string;
+  locale?: string | null;
+  name: string | null;
+  description: string | null;
+  overview: string | null;
+  instructions: string | null;
+  tips: string | null;
+};
+
+type ExerciseTranslationWithExerciseSearchRow = ExerciseTranslationSearchRow & {
+  exercise: {
+    id: number | string;
+    name: string;
+    description: string | null;
+    overview: string | null;
+    instructions: string | null;
+    tips: string | null;
+    video_url: string | null;
+    source_url: string | null;
+  } | null;
+};
+
+function mapExerciseSearchRow(row: {
+  id: number | string;
+  name: string;
+  description: string | null;
+  overview: string | null;
+  instructions: string | null;
+  tips: string | null;
+  video_url: string | null;
+  source_url: string | null;
+}): AdminExerciseSearchResult | null {
+  const id = Number(row.id);
+  if (!Number.isFinite(id)) {
+    return null;
+  }
+
+  return {
+    id,
+    name: row.name,
+    description: row.description,
+    overview: row.overview,
+    instructions: row.instructions,
+    tips: row.tips,
+    videoUrl: row.video_url,
+    sourceUrl: row.source_url
+  };
+}
+
+function applyExerciseTranslation(
+  exercise: AdminExerciseSearchResult,
+  translation?: Omit<ExerciseTranslationSearchRow, "exercise_id" | "locale">
+): AdminExerciseSearchResult {
+  if (!translation) {
+    return exercise;
+  }
+
+  return {
+    ...exercise,
+    name: translation.name ?? exercise.name,
+    description: translation.description ?? exercise.description,
+    overview: translation.overview ?? exercise.overview,
+    instructions: translation.instructions ?? exercise.instructions,
+    tips: translation.tips ?? exercise.tips
+  };
+}
+
+function getExerciseTranslationLocaleFilter(locale: AppLocale) {
+  if (locale === "es") {
+    return "locale=ilike.es*";
+  }
+
+  return `locale=eq.${encodeURIComponent(locale)}`;
+}
+
+async function listExerciseTranslationsByIds(exerciseIds: number[], locale: AppLocale) {
+  if (locale === "en" || !exerciseIds.length) {
+    return new Map<number, Omit<ExerciseTranslationSearchRow, "exercise_id" | "locale">>();
+  }
+
+  const translationsPath =
+    `exercise_translations?select=exercise_id,locale,name,description,overview,instructions,tips` +
+    `&exercise_id=in.(${exerciseIds.join(",")})&${getExerciseTranslationLocaleFilter(locale)}`;
+  const response = await supabaseFetch(translationsPath, { method: "GET" });
+  const rows = (await response.json()) as ExerciseTranslationSearchRow[];
+
+  return new Map(
+    rows
+      .map((row) => {
+        const exerciseId = Number(row.exercise_id);
+        if (!Number.isFinite(exerciseId)) {
+          return null;
+        }
+
+        return [
+          exerciseId,
+          {
+            name: row.name,
+            description: row.description,
+            overview: row.overview,
+            instructions: row.instructions,
+            tips: row.tips
+          }
+        ] as const;
+      })
+      .filter(
+        (
+          row
+        ): row is readonly [
+          number,
+          Omit<ExerciseTranslationSearchRow, "exercise_id" | "locale">
+        ] => row !== null
+      )
+  );
+}
+
+async function listActiveExerciseSearchResultsByIds(exerciseIds: number[]) {
+  if (!exerciseIds.length) {
+    return new Map<number, AdminExerciseSearchResult>();
+  }
+
+  const response = await supabaseFetch(
+    `exercises?select=id,name,description,overview,instructions,tips,video_url,source_url&id=in.(${exerciseIds.join(",")})&is_active=eq.true`,
+    { method: "GET" }
+  );
+  const rows = (await response.json()) as Array<{
+    id: number | string;
+    name: string;
+    description: string | null;
+    overview: string | null;
+    instructions: string | null;
+    tips: string | null;
+    video_url: string | null;
+    source_url: string | null;
+  }>;
+
+  return new Map(rows.map(mapExerciseSearchRow).filter((row): row is AdminExerciseSearchResult => row !== null).map((row) => [row.id, row]));
+}
+
+async function searchActiveExerciseBaseResults(query: string, limit: number) {
+  const normalizedQuery = query.trim();
+  const safeLimit = Math.min(Math.max(limit, 1), 10);
+  const filters = [
+    "select=id,name,description,overview,instructions,tips,video_url,source_url",
+    "is_active=eq.true",
+    "order=name.asc",
+    `limit=${safeLimit}`
+  ];
+
+  if (normalizedQuery) {
+    const escapedQuery = normalizedQuery.replace(/[*,()]/g, " ");
+    filters.push(`or=${encodeURIComponent(`(name.ilike.*${escapedQuery}*,slug.ilike.*${escapedQuery}*)`)}`);
+  }
+
+  const response = await supabaseFetch(`exercises?${filters.join("&")}`, { method: "GET" });
+  const rows = (await response.json()) as Array<{
+    id: number | string;
+    name: string;
+    description: string | null;
+    overview: string | null;
+    instructions: string | null;
+    tips: string | null;
+    video_url: string | null;
+    source_url: string | null;
+  }>;
+
+  return rows.map(mapExerciseSearchRow).filter((row): row is AdminExerciseSearchResult => row !== null);
+}
+
+async function searchTranslatedExerciseResults(query: string, locale: AppLocale, limit: number) {
+  const normalizedQuery = query.trim();
+  const safeLimit = Math.min(Math.max(limit, 1), 10);
+  const filters = [
+    "select=exercise_id,locale,name,description,overview,instructions,tips,exercise:exercises!inner(id,name,description,overview,instructions,tips,video_url,source_url)",
+    getExerciseTranslationLocaleFilter(locale),
+    "exercise.is_active=eq.true",
+    "order=name.asc",
+    `limit=${safeLimit}`
+  ];
+
+  if (normalizedQuery) {
+    const escapedQuery = normalizedQuery.replace(/[*,()]/g, " ");
+    filters.push(`name=ilike.${encodeURIComponent(`*${escapedQuery}*`)}`);
+  }
+
+  const response = await supabaseFetch(`exercise_translations?${filters.join("&")}`, { method: "GET" });
+  const translationRows = (await response.json()) as ExerciseTranslationWithExerciseSearchRow[];
+
+  return translationRows
+    .map((translation) => {
+      const exercise = translation.exercise ? mapExerciseSearchRow(translation.exercise) : null;
+      return exercise ? applyExerciseTranslation(exercise, translation) : null;
+    })
+    .filter((exercise): exercise is AdminExerciseSearchResult => exercise !== null);
+}
+
+export async function searchActiveExercisesForAdmin(query: string, locale: AppLocale = "es", limit = 5) {
+  const safeLimit = Math.min(Math.max(limit, 1), 10);
+
+  if (locale === "en") {
+    return searchActiveExerciseBaseResults(query, safeLimit);
+  }
+
+  const translatedNameResults = await searchTranslatedExerciseResults(query, locale, safeLimit);
+  const resultsById = new Map(translatedNameResults.map((exercise) => [exercise.id, exercise]));
+
+  if (resultsById.size < safeLimit) {
+    const remainingLimit = safeLimit - resultsById.size;
+    const baseResults = await searchActiveExerciseBaseResults(query, remainingLimit);
+    const translationsById = await listExerciseTranslationsByIds(
+      baseResults.map((exercise) => exercise.id),
+      locale
+    );
+
+    for (const exercise of baseResults) {
+      if (resultsById.size >= safeLimit) {
+        break;
+      }
+
+      if (!resultsById.has(exercise.id)) {
+        resultsById.set(exercise.id, applyExerciseTranslation(exercise, translationsById.get(exercise.id)));
+      }
+    }
+  }
+
+  return Array.from(resultsById.values()).slice(0, safeLimit);
+}
+
+export async function hydrateRoutineImportDraftWithExercises(draft: RoutineImportDraft) {
+  const exerciseIds = collectRoutineExerciseIds(draft);
+  if (!exerciseIds.length) {
+    throw new Error("La rutina no tiene ejercicios.");
+  }
+
+  const activeExercisesById = await listActiveExercisesByIds(exerciseIds);
+  const missingExerciseIds = exerciseIds.filter((id) => !activeExercisesById.has(id));
+
+  if (missingExerciseIds.length) {
+    throw new Error(`Estos exerciseId no existen o no estan activos: ${missingExerciseIds.join(", ")}.`);
+  }
+
+  return {
+    ...draft,
+    routine: {
+      ...draft.routine,
+      days: draft.routine.days.map((day) => ({
+        ...day,
+        items: day.items.map((item) => {
+          if (item.type === "single") {
+            const exerciseInfo = activeExercisesById.get(item.exerciseId);
+            return {
+              ...item,
+              exerciseName: exerciseInfo?.name ?? item.exerciseName,
+              exerciseInfo: exerciseInfo
+                ? {
+                    description: exerciseInfo.description,
+                    overview: exerciseInfo.overview,
+                    instructions: exerciseInfo.instructions,
+                    tips: exerciseInfo.tips,
+                    videoUrl: exerciseInfo.videoUrl,
+                    sourceUrl: exerciseInfo.sourceUrl
+                  }
+                : null
+            };
+          }
+
+          return {
+            ...item,
+            exercises: item.exercises.map((exercise) => {
+              const exerciseInfo = activeExercisesById.get(exercise.exerciseId);
+              return {
+                ...exercise,
+                exerciseName: exerciseInfo?.name ?? exercise.exerciseName,
+                exerciseInfo: exerciseInfo
+                  ? {
+                      description: exerciseInfo.description,
+                      overview: exerciseInfo.overview,
+                      instructions: exerciseInfo.instructions,
+                      tips: exerciseInfo.tips,
+                      videoUrl: exerciseInfo.videoUrl,
+                      sourceUrl: exerciseInfo.sourceUrl
+                    }
+                  : null
+              };
+            })
+          };
+        })
+      }))
+    }
+  };
+}
+
+export async function createPersonalizedRoutineFromDraft(params: {
+  userId: string;
+  createdByUserId: string;
+  draft: RoutineImportDraft;
+}) {
+  const targetProfile = await findProfileById(params.userId);
+  if (!targetProfile) {
+    throw new Error("No encontramos el usuario para asignar la rutina.");
+  }
+
+  await hydrateRoutineImportDraftWithExercises(params.draft);
+
+  const slugBase = slugifyRoutineName(params.draft.routine.name) || "rutina-personalizada";
+  const slug = `${slugBase}-${Date.now()}`;
+  const [template] = await postSupabaseRows<{ id: number }>("routine_templates?select=id", {
+    name: params.draft.routine.name,
+    slug,
+    description: params.draft.routine.description,
+    short_description: params.draft.routine.shortDescription || null,
+    long_description_md: params.draft.routine.longDescriptionMd || null,
+    difficulty: params.draft.routine.difficulty,
+    is_basic: false,
+    owner_user_id: params.userId,
+    created_by_user_id: params.createdByUserId,
+    is_active: true
+  });
+
+  if (!template?.id) {
+    throw new Error("No se pudo crear la rutina.");
+  }
+
+  const dayRows = params.draft.routine.days.map((day) => ({
+    routine_template_id: template.id,
+    day_number: day.dayNumber,
+    title: day.title,
+    notes: day.notes || null
+  }));
+  const insertedDays = await postSupabaseRows<{ id: number; day_number: number }>("routine_days?select=id,day_number", dayRows);
+  const dayIdByNumber = new Map(insertedDays.map((day) => [day.day_number, day.id]));
+
+  const exerciseRows: RoutineDayExerciseInsertRow[] = [];
+
+  for (const day of params.draft.routine.days) {
+    const routineDayId = dayIdByNumber.get(day.dayNumber);
+    if (!routineDayId) {
+      throw new Error(`No se pudo crear el dia ${day.dayNumber}.`);
+    }
+
+    day.items.forEach((item, itemIndex) => {
+      const orderIndex = itemIndex + 1;
+
+      if (item.type === "single") {
+        exerciseRows.push({
+          routine_day_id: routineDayId,
+          exercise_id: item.exerciseId,
+          order_index: orderIndex,
+          is_combined: false,
+          combined_group: null,
+          combined_index: null,
+          combined_label: null,
+          sets: item.sets,
+          reps_min: item.repsMin,
+          reps_max: item.repsMax,
+          rest_seconds: item.restSeconds,
+          rir: item.rir,
+          notes: item.notes || null
+        });
+        return;
+      }
+
+      item.exercises.forEach((exercise, exerciseIndex) => {
+        exerciseRows.push({
+          routine_day_id: routineDayId,
+          exercise_id: exercise.exerciseId,
+          order_index: orderIndex,
+          is_combined: true,
+          combined_group: orderIndex,
+          combined_index: exerciseIndex + 1,
+          combined_label: item.label,
+          sets: exercise.sets,
+          reps_min: exercise.repsMin,
+          reps_max: exercise.repsMax,
+          rest_seconds: exercise.restSeconds,
+          rir: exercise.rir,
+          notes: exercise.notes || null
+        });
+      });
+    });
+  }
+
+  await postSupabaseRows("routine_day_exercises?select=id", exerciseRows);
+
+  await postSupabaseRows("user_routine_assignments?select=id", {
+    user_id: params.userId,
+    routine_template_id: template.id,
+    status: "active",
+    notes: "Rutina creada desde importacion JSON del formulario."
+  });
+
+  return {
+    routineId: template.id
+  };
+}
+
+async function replaceRoutineDaysAndExercises(routineTemplateId: number, draft: RoutineImportDraft) {
+  await deleteSupabaseRows(`routine_days?routine_template_id=eq.${routineTemplateId}`);
+
+  const dayRows = draft.routine.days.map((day) => ({
+    routine_template_id: routineTemplateId,
+    day_number: day.dayNumber,
+    title: day.title,
+    notes: day.notes || null
+  }));
+  const insertedDays = await postSupabaseRows<{ id: number; day_number: number }>("routine_days?select=id,day_number", dayRows);
+  const dayIdByNumber = new Map(insertedDays.map((day) => [day.day_number, day.id]));
+
+  const exerciseRows: RoutineDayExerciseInsertRow[] = [];
+
+  for (const day of draft.routine.days) {
+    const routineDayId = dayIdByNumber.get(day.dayNumber);
+    if (!routineDayId) {
+      throw new Error(`No se pudo crear el dia ${day.dayNumber}.`);
+    }
+
+    day.items.forEach((item, itemIndex) => {
+      const orderIndex = itemIndex + 1;
+
+      if (item.type === "single") {
+        exerciseRows.push({
+          routine_day_id: routineDayId,
+          exercise_id: item.exerciseId,
+          order_index: orderIndex,
+          is_combined: false,
+          combined_group: null,
+          combined_index: null,
+          combined_label: null,
+          sets: item.sets,
+          reps_min: item.repsMin,
+          reps_max: item.repsMax,
+          rest_seconds: item.restSeconds,
+          rir: item.rir,
+          notes: item.notes || null
+        });
+        return;
+      }
+
+      item.exercises.forEach((exercise, exerciseIndex) => {
+        exerciseRows.push({
+          routine_day_id: routineDayId,
+          exercise_id: exercise.exerciseId,
+          order_index: orderIndex,
+          is_combined: true,
+          combined_group: orderIndex,
+          combined_index: exerciseIndex + 1,
+          combined_label: item.label,
+          sets: exercise.sets,
+          reps_min: exercise.repsMin,
+          reps_max: exercise.repsMax,
+          rest_seconds: exercise.restSeconds,
+          rir: exercise.rir,
+          notes: exercise.notes || null
+        });
+      });
+    });
+  }
+
+  await postSupabaseRows("routine_day_exercises?select=id", exerciseRows);
+}
+
+export async function updatePersonalizedRoutineTemplateFromDraft(params: {
+  routineId: number;
+  userId: string;
+  draft: RoutineImportDraft;
+}) {
+  const existingResponse = await supabaseFetch(
+    `routine_templates?select=id&owner_user_id=eq.${encodeURIComponent(params.userId)}&id=eq.${params.routineId}&is_basic=eq.false&limit=1`,
+    { method: "GET" }
+  );
+  const existingRows = (await existingResponse.json()) as Array<{ id: number }>;
+  if (!existingRows.length) {
+    throw new Error("No encontramos la rutina personalizada para editar.");
+  }
+
+  await hydrateRoutineImportDraftWithExercises(params.draft);
+
+  await patchSupabaseRows(`routine_templates?id=eq.${params.routineId}&owner_user_id=eq.${encodeURIComponent(params.userId)}&is_basic=eq.false`, {
+    name: params.draft.routine.name,
+    description: params.draft.routine.description,
+    short_description: params.draft.routine.shortDescription || null,
+    long_description_md: params.draft.routine.longDescriptionMd || null,
+    difficulty: params.draft.routine.difficulty,
+    is_active: true
+  });
+
+  await replaceRoutineDaysAndExercises(params.routineId, params.draft);
+
+  return {
+    routineId: params.routineId
+  };
+}
+
+export async function listPersonalizedRoutineTemplatesByUserId(userId: string) {
+  const path =
+    `routine_templates?select=id,name,description,short_description,difficulty,is_active,created_at,updated_at` +
+    `&owner_user_id=eq.${encodeURIComponent(userId)}&is_basic=eq.false&is_active=eq.true&order=created_at.desc`;
+  const response = await supabaseFetch(path, { method: "GET" });
+  const rows = (await response.json()) as Array<{
+    id: number;
+    name: string;
+    description: string | null;
+    short_description: string | null;
+    difficulty: "beginner" | "intermediate" | "advanced" | null;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+  }>;
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    shortDescription: row.short_description,
+    difficulty: row.difficulty,
+    isActive: row.is_active,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }));
+}
+
+export async function deactivatePersonalizedRoutineTemplateForUser(params: { routineId: number; userId: string }) {
+  await supabaseFetch(`routine_templates?id=eq.${params.routineId}&owner_user_id=eq.${encodeURIComponent(params.userId)}&is_basic=eq.false`, {
+    method: "PATCH",
+    headers: {
+      Prefer: "return=minimal"
+    },
+    body: JSON.stringify({
+      is_active: false
+    })
+  });
+}
+
+export async function updateProfileAvatarUrlByUserId(userId: string, avatarUrl: string) {
+  await supabaseFetch(`profiles?id=eq.${encodeURIComponent(userId)}`, {
+    method: "PATCH",
+    headers: {
+      Prefer: "return=minimal"
+    },
+    body: JSON.stringify({
+      avatar_url: avatarUrl
+    })
+  });
+}
+
 export async function listBasicRoutineTemplates(locale: AppLocale = "es") {
   const pathWithRichDescription =
     "routine_templates?select=id,name,description,short_description&is_basic=eq.true&is_active=eq.true&order=created_at.asc";
@@ -262,7 +992,6 @@ type RoutineExerciseDetail = {
   repsMax: number | null;
   restSeconds: number | null;
   rir: number | null;
-  tempo: string | null;
   notes: string | null;
 };
 
@@ -362,12 +1091,12 @@ export async function findRoutineTemplateDetailById(routineId: number, locale: A
   const dayIds = dayRows.map((day) => day.id);
   const dayIdsClause = dayIds.join(",");
   const exercisesPathWithCombined =
-    `routine_day_exercises?select=id,routine_day_id,order_index,is_combined,combined_group,combined_index,combined_label,sets,reps_min,reps_max,rest_seconds,rir,tempo,notes,` +
+    `routine_day_exercises?select=id,routine_day_id,order_index,is_combined,combined_group,combined_index,combined_label,sets,reps_min,reps_max,rest_seconds,rir,notes,` +
     `exercise:exercises(id,name,description,overview,instructions,tips,video_url,source_url)` +
     `&routine_day_id=in.(${dayIdsClause})` +
     `&order=order_index.asc`;
   const exercisesPathLegacy =
-    `routine_day_exercises?select=id,routine_day_id,order_index,sets,reps_min,reps_max,rest_seconds,rir,tempo,notes,` +
+    `routine_day_exercises?select=id,routine_day_id,order_index,sets,reps_min,reps_max,rest_seconds,rir,notes,` +
     `exercise:exercises(id,name,description,overview,instructions,tips,video_url,source_url)` +
     `&routine_day_id=in.(${dayIdsClause})` +
     `&order=order_index.asc`;
@@ -385,7 +1114,6 @@ export async function findRoutineTemplateDetailById(routineId: number, locale: A
     reps_max: number | null;
     rest_seconds: number | null;
     rir: number | null;
-    tempo: string | null;
     notes: string | null;
     exercise: {
       id: number | string;
@@ -563,7 +1291,6 @@ export async function findRoutineTemplateDetailById(routineId: number, locale: A
       repsMax: row.reps_max,
       restSeconds: row.rest_seconds,
       rir: row.rir,
-      tempo: row.tempo,
       notes: row.notes
     });
     acc.set(row.routine_day_id, current);
@@ -623,6 +1350,8 @@ export async function findRoutineTemplateDetailById(routineId: number, locale: A
 type ListSubscribersParams = {
   status?: SubscriptionStatus | "all";
   plan?: PlanCode | "all";
+  onboarding?: "all" | "with" | "without";
+  routines?: "all" | "with" | "without";
   q?: string;
   limit?: number;
 };
@@ -630,6 +1359,8 @@ type ListSubscribersParams = {
 export async function listSubscribers(params: ListSubscribersParams) {
   const status = params.status ?? "all";
   const plan = params.plan ?? "all";
+  const onboarding = params.onboarding ?? "all";
+  const routines = params.routines ?? "all";
   const q = params.q?.trim().toLowerCase() ?? "";
   const limit = Math.min(Math.max(params.limit ?? 200, 1), 500);
 
@@ -660,16 +1391,49 @@ export async function listSubscribers(params: ListSubscribersParams) {
 
   const uniqueUserIds = Array.from(new Set(subscriptions.map((row) => row.user_id).filter(Boolean)));
   let profilesById = new Map<string, { email: string | null; fullName: string | null }>();
+  let routineCountByUserId = new Map<string, number>();
+  let nutritionCountByUserId = new Map<string, number>();
+  let onboardingByUserId = new Map<string, { status: "draft" | "submitted"; submittedAt: string | null }>();
 
   if (uniqueUserIds.length > 0) {
     const inClause = uniqueUserIds.map((id) => `"${id}"`).join(",");
     const profilesPath = `profiles?select=id,email,full_name&id=in.(${encodeURIComponent(inClause)})`;
-    const profilesResponse = await supabaseFetch(profilesPath, { method: "GET" });
+    const personalizedRoutinesPath =
+      `routine_templates?select=owner_user_id` +
+      `&owner_user_id=in.(${encodeURIComponent(inClause)})&is_basic=eq.false&is_active=eq.true`;
+    const onboardingPath =
+      `onboarding_answers?select=user_id,status,submitted_at` +
+      `&user_id=in.(${encodeURIComponent(inClause)})`;
+    const nutritionResourcesPath =
+      `nutrition_resources?select=user_id` +
+      `&user_id=in.(${encodeURIComponent(inClause)})&is_active=eq.true`;
+
+    const [profilesResponse, personalizedRoutinesResponse, onboardingResponse] = await Promise.all([
+      supabaseFetch(profilesPath, { method: "GET" }),
+      supabaseFetch(personalizedRoutinesPath, { method: "GET" }),
+      supabaseFetch(onboardingPath, { method: "GET" })
+    ]);
+
     const profiles = (await profilesResponse.json()) as Array<{
       id: string;
       email: string | null;
       full_name: string | null;
     }>;
+    const personalizedRoutines = (await personalizedRoutinesResponse.json()) as Array<{
+      owner_user_id: string | null;
+    }>;
+    const onboardingRows = (await onboardingResponse.json()) as Array<{
+      user_id: string;
+      status: "draft" | "submitted";
+      submitted_at: string | null;
+    }>;
+    let nutritionRows: Array<{ user_id: string | null }> = [];
+    try {
+      const nutritionResourcesResponse = await supabaseFetch(nutritionResourcesPath, { method: "GET" });
+      nutritionRows = (await nutritionResourcesResponse.json()) as Array<{ user_id: string | null }>;
+    } catch {
+      nutritionRows = [];
+    }
 
     profilesById = new Map(
       profiles.map((profile) => [
@@ -680,28 +1444,113 @@ export async function listSubscribers(params: ListSubscribersParams) {
         }
       ])
     );
+
+    routineCountByUserId = personalizedRoutines.reduce<Map<string, number>>((acc, row) => {
+      if (!row.owner_user_id) {
+        return acc;
+      }
+
+      acc.set(row.owner_user_id, (acc.get(row.owner_user_id) ?? 0) + 1);
+      return acc;
+    }, new Map<string, number>());
+
+    nutritionCountByUserId = nutritionRows.reduce<Map<string, number>>((acc, row) => {
+      if (!row.user_id) {
+        return acc;
+      }
+
+      acc.set(row.user_id, (acc.get(row.user_id) ?? 0) + 1);
+      return acc;
+    }, new Map<string, number>());
+
+    onboardingByUserId = new Map(
+      onboardingRows.map((row) => [
+        row.user_id,
+        {
+          status: row.status,
+          submittedAt: row.submitted_at
+        }
+      ])
+    );
   }
 
-  const merged = subscriptions.map((subscription) => {
-    const profile = profilesById.get(subscription.user_id);
+  const subscriptionsByUserId = subscriptions.reduce<Map<string, typeof subscriptions>>((acc, subscription) => {
+    const current = acc.get(subscription.user_id) ?? [];
+    current.push(subscription);
+    acc.set(subscription.user_id, current);
+    return acc;
+  }, new Map<string, typeof subscriptions>());
+
+  const merged = Array.from(subscriptionsByUserId.entries()).map(([userId, userSubscriptions]) => {
+    const sortedSubscriptions = [...userSubscriptions].sort((a, b) => {
+      if (a.status === "active" && b.status !== "active") {
+        return -1;
+      }
+      if (a.status !== "active" && b.status === "active") {
+        return 1;
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+    const selectedSubscription = sortedSubscriptions[0];
+    const profile = profilesById.get(userId);
+    const onboarding = onboardingByUserId.get(userId);
+    const routineCount = routineCountByUserId.get(userId) ?? 0;
+    const nutritionCount = nutritionCountByUserId.get(userId) ?? 0;
+    const hasOnboarding = Boolean(onboarding);
+
     return {
-      id: subscription.id,
-      userId: subscription.user_id,
-      planCode: subscription.plan_code,
-      status: subscription.status,
-      createdAt: subscription.created_at,
-      canceledAt: subscription.canceled_at,
+      id: selectedSubscription.id,
+      userId,
+      planCode: selectedSubscription.plan_code,
+      status: selectedSubscription.status,
+      createdAt: selectedSubscription.created_at,
+      canceledAt: selectedSubscription.canceled_at,
       email: profile?.email ?? null,
-      fullName: profile?.fullName ?? null
+      fullName: profile?.fullName ?? null,
+      routineCount,
+      hasRoutines: routineCount > 0,
+      nutritionCount,
+      hasNutrition: nutritionCount > 0,
+      onboardingStatus: onboarding?.status ?? null,
+      hasOnboarding,
+      subscriptionHistory: sortedSubscriptions.map((subscription) => ({
+        id: subscription.id,
+        planCode: subscription.plan_code,
+        status: subscription.status,
+        createdAt: subscription.created_at,
+        canceledAt: subscription.canceled_at
+      }))
     };
   });
 
-  if (!q) {
-    return merged;
-  }
+  const filtered = merged.filter((row) => {
+    if (onboarding === "with" && !row.hasOnboarding) {
+      return false;
+    }
 
-  return merged.filter((row) => {
+    if (onboarding === "without" && row.hasOnboarding) {
+      return false;
+    }
+
+    if (routines === "with" && !row.hasRoutines) {
+      return false;
+    }
+
+    if (routines === "without" && row.hasRoutines) {
+      return false;
+    }
+
+    if (!q) {
+      return true;
+    }
+
     const haystack = `${row.fullName ?? ""} ${row.email ?? ""} ${row.userId}`.toLowerCase();
     return haystack.includes(q);
   });
+
+  if (!q && onboarding === "all" && routines === "all") {
+    return filtered;
+  }
+
+  return filtered;
 }

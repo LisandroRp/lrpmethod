@@ -91,8 +91,8 @@ export function RoutineGuidePanel({ content, expandLabel, collapseLabel }: Routi
           className="text-accent routine-print-action mt-3 inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium transition-colors hover:text-accent-hover hover:underline hover:decoration-2 hover:underline-offset-4"
           onClick={toggleExpanded}
         >
-          {isExpanded ? <TbChevronDown className="h-4 w-4 shrink-0" aria-hidden="true" /> : <TbChevronUp className="h-4 w-4 shrink-0" aria-hidden="true" />}
           {isExpanded ? collapseLabel : expandLabel}
+          {isExpanded ? <TbChevronUp className="h-4 w-4 shrink-0" aria-hidden="true" /> : <TbChevronDown className="h-4 w-4 shrink-0" aria-hidden="true" />}
         </button>
       ) : null}
     </div>

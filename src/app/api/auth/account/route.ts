@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { hasSubmittedOnboardingAnswerByUserId } from "@/lib/server/onboarding-admin";
-import { findCurrentActiveSubscriptionByUserId, isUserAdmin } from "@/lib/server/supabase-admin";
+import { findCurrentActiveSubscriptionByUserId, findProfileById } from "@/lib/server/supabase-admin";
 import { getCurrentAuthenticatedUser } from "@/lib/server/supabase-auth";
 
 export async function GET() {
@@ -12,13 +12,13 @@ export async function GET() {
   }
 
   let subscription: Awaited<ReturnType<typeof findCurrentActiveSubscriptionByUserId>> = null;
-  let admin = false;
+  let profile: Awaited<ReturnType<typeof findProfileById>> = null;
   let onboardingSubmitted = false;
 
   try {
-    const [subscriptionResult, adminResult, onboardingResult] = await Promise.allSettled([
+    const [subscriptionResult, profileResult, onboardingResult] = await Promise.allSettled([
       findCurrentActiveSubscriptionByUserId(user.id),
-      isUserAdmin(user.id),
+      findProfileById(user.id),
       hasSubmittedOnboardingAnswerByUserId(user.id)
     ]);
 
@@ -28,10 +28,10 @@ export async function GET() {
       console.error("[auth/account] failed to fetch subscription", subscriptionResult.reason);
     }
 
-    if (adminResult.status === "fulfilled") {
-      admin = adminResult.value;
+    if (profileResult.status === "fulfilled") {
+      profile = profileResult.value;
     } else {
-      console.error("[auth/account] failed to fetch admin role", adminResult.reason);
+      console.error("[auth/account] failed to fetch profile", profileResult.reason);
     }
 
     if (onboardingResult.status === "fulfilled") {
@@ -48,8 +48,9 @@ export async function GET() {
     user: {
       id: user.id,
       email: user.email ?? null,
-      fullName: user.user_metadata?.full_name ?? null,
-      isAdmin: admin
+      fullName: profile?.fullName ?? user.user_metadata?.full_name ?? null,
+      avatarUrl: profile?.avatarUrl ?? null,
+      isAdmin: Boolean(profile?.isAdmin)
     },
     subscription: subscription
       ? {

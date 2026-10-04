@@ -5,6 +5,8 @@ import { OnboardingAnswersInput } from "@/features/onboarding/schema";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ONBOARDING_BUCKET = process.env.ONBOARDING_STORAGE_BUCKET?.trim() || "onboarding-photos";
+const MAX_ONBOARDING_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
+const allowedOnboardingPhotoMimeTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
 
 function ensureSupabaseEnv() {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -55,6 +57,16 @@ async function supabaseStorageUpload(path: string, file: File) {
   }
 
   return `${ONBOARDING_BUCKET}/${path}`;
+}
+
+function validateOnboardingPhoto(file: File) {
+  if (!allowedOnboardingPhotoMimeTypes.has(file.type)) {
+    throw new Error("Formato de imagen no permitido. Usa JPG, PNG, WEBP, HEIC o HEIF.");
+  }
+
+  if (file.size > MAX_ONBOARDING_PHOTO_SIZE_BYTES) {
+    throw new Error("La imagen supera el limite de 5 MB.");
+  }
 }
 
 export type OnboardingRecord = {
@@ -112,12 +124,14 @@ export async function saveOnboardingByUserId(params: {
   let sidePhotoPath = existing?.sidePhotoPath ?? null;
 
   if (params.frontPhoto) {
+    validateOnboardingPhoto(params.frontPhoto);
     const ext = params.frontPhoto.name.split(".").pop()?.toLowerCase() || "jpg";
     const filename = `${Date.now()}-${crypto.randomUUID()}-front.${ext}`;
     frontPhotoPath = await supabaseStorageUpload(`${params.userId}/${filename}`, params.frontPhoto);
   }
 
   if (params.sidePhoto) {
+    validateOnboardingPhoto(params.sidePhoto);
     const ext = params.sidePhoto.name.split(".").pop()?.toLowerCase() || "jpg";
     const filename = `${Date.now()}-${crypto.randomUUID()}-side.${ext}`;
     sidePhotoPath = await supabaseStorageUpload(`${params.userId}/${filename}`, params.sidePhoto);

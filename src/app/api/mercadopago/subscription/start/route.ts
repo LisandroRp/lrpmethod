@@ -1,11 +1,10 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
+import { getPlanPriceAmountArs, type PlanCode } from "@/lib/plans/pricing";
 import { createPendingPreapproval } from "@/lib/server/mercadopago-client";
 import { insertRow } from "@/lib/server/supabase-admin";
 import { getCurrentAuthenticatedUser } from "@/lib/server/supabase-auth";
-
-type PlanCode = "basic" | "intermediate" | "premium";
 
 function isPlanCode(value: string): value is PlanCode {
   return value === "basic" || value === "intermediate" || value === "premium";
@@ -20,15 +19,15 @@ function getPlanConfig(planCode: PlanCode) {
     }
   > = {
     basic: {
-      amount: 100,
+      amount: getPlanPriceAmountArs("basic"),
       reason: "LRP Method - Basic"
     },
     intermediate: {
-      amount: 33500,
+      amount: getPlanPriceAmountArs("intermediate"),
       reason: "LRP Method - Intermediate"
     },
     premium: {
-      amount: 59970,
+      amount: getPlanPriceAmountArs("premium"),
       reason: "LRP Method - Premium"
     }
   };
@@ -68,8 +67,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/", request.url));
     }
 
-    const forcedPayerEmail = sanitizeEmail(process.env.MP_FORCED_PAYER_EMAIL);
-    const payerEmail = forcedPayerEmail || sanitizeEmail(user.email);
+    const payerEmail = sanitizeEmail(user.email);
     if (!payerEmail) {
       return NextResponse.redirect(new URL("/?checkout_error=missing_payer_email", request.url));
     }
@@ -107,7 +105,7 @@ export async function GET(request: NextRequest) {
         user_id: user.id,
         plan_code: plan,
         payer_email: payerEmail,
-        payer_email_source: forcedPayerEmail ? "forced_env" : "user_email",
+        payer_email_source: "user_email",
         preapproval_id: preapproval.id ?? null,
         preapproval_status: preapproval.status ?? null,
         external_reference: preapproval.external_reference ?? externalReference,

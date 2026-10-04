@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
 import { LoadingButton } from "@/components/composed/LoadingButton";
 import { useAccount } from "@/features/contexts/AccountContext";
@@ -13,41 +13,47 @@ type PricingSectionProps = {
   content: LandingContent;
 };
 
+function subscribeToUrlChanges(onStoreChange: () => void) {
+  window.addEventListener("popstate", onStoreChange);
+  window.addEventListener("lrp-url-change", onStoreChange);
+
+  return () => {
+    window.removeEventListener("popstate", onStoreChange);
+    window.removeEventListener("lrp-url-change", onStoreChange);
+  };
+}
+
+function getUrlSearchSnapshot() {
+  return window.location.search;
+}
+
+function getServerUrlSearchSnapshot() {
+  return "";
+}
+
+function isPlanCode(value: string | null): value is PlanTier["code"] {
+  return value === "basic" || value === "intermediate" || value === "premium";
+}
+
 export function PricingSection({ content }: PricingSectionProps) {
   const { user, activePlanCode, isLoading: isAccountLoading, refreshAccount } = useAccount();
+  const urlSearch = useSyncExternalStore(subscribeToUrlChanges, getUrlSearchSnapshot, getServerUrlSearchSnapshot);
   const [checkoutLoadingPlan, setCheckoutLoadingPlan] = useState<PlanTier["code"] | null>(null);
   const [isAlreadySubscribedModalOpen, setIsAlreadySubscribedModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState<PlanTier["code"] | null>(null);
+  const [checkoutErrorMessage, setCheckoutErrorMessage] = useState<string | null>(null);
 
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    return params.get("auth") === "1";
-  });
-
-  const [pendingPlan, setPendingPlan] = useState<PlanTier["code"] | null>(() => {
-    if (typeof window === "undefined") {
-      return null;
-    }
-
-    const params = new URLSearchParams(window.location.search);
+  const urlState = useMemo(() => {
+    const params = new URLSearchParams(urlSearch);
     const plan = params.get("plan");
-    if (plan === "basic" || plan === "intermediate" || plan === "premium") {
-      return plan;
-    }
 
-    return null;
-  });
-  const [checkoutErrorMessage, setCheckoutErrorMessage] = useState<string | null>(() => {
-    if (typeof window === "undefined") {
-      return null;
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    return params.get("checkout_error") ? content.pricing.checkoutErrorMessage : null;
-  });
+    return {
+      shouldOpenAuth: params.get("auth") === "1",
+      pendingPlan: isPlanCode(plan) ? plan : null,
+      hasCheckoutError: Boolean(params.get("checkout_error"))
+    };
+  }, [urlSearch]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -64,15 +70,20 @@ export function PricingSection({ content }: PricingSectionProps) {
     const nextQuery = params.toString();
     const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash}`;
     window.history.replaceState(null, "", nextUrl);
-  }, []);
+    window.dispatchEvent(new Event("lrp-url-change"));
+  }, [urlSearch]);
+
+  const effectivePendingPlan = pendingPlan ?? urlState.pendingPlan;
+  const visibleCheckoutErrorMessage = checkoutErrorMessage ?? (urlState.hasCheckoutError ? content.pricing.checkoutErrorMessage : null);
+  const shouldShowAuthModal = isAuthModalOpen || urlState.shouldOpenAuth;
 
   const checkoutMessage = useMemo(() => {
-    if (!pendingPlan) {
+    if (!effectivePendingPlan) {
       return null;
     }
 
     return content.auth.requiredForCheckoutMessage;
-  }, [content.auth.requiredForCheckoutMessage, pendingPlan]);
+  }, [content.auth.requiredForCheckoutMessage, effectivePendingPlan]);
 
   const planNameByCode = useMemo(
     () =>
@@ -108,8 +119,8 @@ export function PricingSection({ content }: PricingSectionProps) {
     setIsAuthModalOpen(false);
     void refreshAccount();
 
-    if (pendingPlan) {
-      goToCheckout(pendingPlan);
+    if (effectivePendingPlan) {
+      goToCheckout(effectivePendingPlan);
     }
   }
 
@@ -119,7 +130,7 @@ export function PricingSection({ content }: PricingSectionProps) {
         <div className="max-w-2xl">
           <p className="section-kicker">{content.pricing.kicker}</p>
           <h2 className="section-title">{content.pricing.title}</h2>
-          {checkoutErrorMessage ? <p className="text-accent mt-3 text-sm">{checkoutErrorMessage}</p> : null}
+          {visibleCheckoutErrorMessage ? <p className="text-accent mt-3 text-sm">{visibleCheckoutErrorMessage}</p> : null}
         </div>
 
         <div className="mt-8 grid gap-4 sm:gap-6 md:grid-cols-3">
@@ -191,7 +202,7 @@ export function PricingSection({ content }: PricingSectionProps) {
 
       <AuthModal
         content={content.auth}
-        isOpen={isAuthModalOpen}
+        isOpen={shouldShowAuthModal}
         onClose={() => setIsAuthModalOpen(false)}
         onAuthenticated={handleAuthenticated}
         checkoutMessage={checkoutMessage}

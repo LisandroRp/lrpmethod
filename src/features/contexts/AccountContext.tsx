@@ -8,6 +8,7 @@ type AccountUser = {
   id: string;
   email: string | null;
   fullName: string | null;
+  avatarUrl: string | null;
   isAdmin?: boolean;
 };
 
@@ -30,6 +31,39 @@ type AccountContextValue = {
 };
 
 const AccountContext = createContext<AccountContextValue | null>(null);
+
+function getSignupSessionFromHash() {
+  if (typeof window === "undefined" || !window.location.hash.startsWith("#")) {
+    return null;
+  }
+
+  const hashParams = new URLSearchParams(window.location.hash.slice(1));
+  const type = hashParams.get("type")?.trim().toLowerCase() ?? "";
+  const accessToken = hashParams.get("access_token")?.trim() ?? "";
+  const refreshToken = hashParams.get("refresh_token")?.trim() ?? "";
+
+  if (type !== "signup" || !accessToken || !refreshToken) {
+    return null;
+  }
+
+  return {
+    accessToken,
+    refreshToken
+  };
+}
+
+async function setSessionFromHash(accessToken: string, refreshToken: string) {
+  const response = await fetch("/api/auth/session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      accessToken,
+      refreshToken
+    })
+  });
+
+  return response.ok;
+}
 
 export function AccountProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
@@ -85,7 +119,20 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void refreshAccount();
+    async function initializeAccount() {
+      const signupSession = getSignupSessionFromHash();
+
+      if (signupSession) {
+        const wasSessionSet = await setSessionFromHash(signupSession.accessToken, signupSession.refreshToken);
+        if (wasSessionSet) {
+          window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+        }
+      }
+
+      await refreshAccount();
+    }
+
+    void initializeAccount();
   }, [refreshAccount]);
 
   const value = useMemo<AccountContextValue>(

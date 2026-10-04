@@ -12,12 +12,16 @@ export const medicalAuthorizationSchema = z.enum(["si", "no", "no_aplica"]);
 export const mealScheduleSchema = z.enum(["fijos", "variables", "mixtos"]);
 export const mealsPerDaySchema = z.enum(["2", "3", "4", "5_plus"]);
 export const nutritionPreferenceSchema = z.enum(["simple", "estructurada"]);
-export const commuteTransportSchema = z.enum(["caminando", "bicicleta", "moto", "auto", "colectivo", "tren_subte"]);
+export const commuteTransportSchema = z.enum(["home_office", "caminando", "bicicleta", "moto", "auto", "colectivo", "tren_subte"]);
 export const commuteDistanceSchema = z.enum(["lt_2", "2_5", "5_10", "10_20", "gt_20"]);
 export const commuteTimeSchema = z.enum(["lt_15", "15_30", "30_45", "45_60", "gt_60"]);
 export const followupTimeSchema = z.enum(["manana", "tarde", "noche"]);
 
-export const onboardingAnswersSchema = z.object({
+const optionalTextField = z.string().max(2000).optional().default("");
+const optionalSelect = <T extends z.ZodType>(schema: T) => schema.nullish().default(null);
+
+export const onboardingAnswersSchema = z
+  .object({
   fullName: z.string().min(2).max(120),
   email: z.string().email().max(200),
   whatsapp: z.string().min(6).max(40),
@@ -31,23 +35,44 @@ export const onboardingAnswersSchema = z.object({
   trainingPlace: trainingPlaceSchema,
   availableEquipment: z.string().min(2).max(2000),
   injuriesLimitations: z.string().min(2).max(2000),
-  medicalConditionMedication: z.string().min(2).max(2000),
-  medicalAuthorization: medicalAuthorizationSchema,
+  medicalConditionMedication: optionalTextField,
+  medicalAuthorization: optionalSelect(medicalAuthorizationSchema),
   currentNutrition: z.string().min(2).max(2000),
-  allergiesRestrictions: z.string().min(2).max(2000),
-  mealSchedule: mealScheduleSchema,
-  mealsPerDay: mealsPerDaySchema,
-  nutritionPreference: nutritionPreferenceSchema,
+  allergiesRestrictions: optionalTextField,
+  mealSchedule: optionalSelect(mealScheduleSchema),
+  mealsPerDay: optionalSelect(mealsPerDaySchema),
+  nutritionPreference: optionalSelect(nutritionPreferenceSchema),
   occupation: z.string().min(2).max(120),
   typicalDay: z.string().min(2).max(2000),
   hobbies: z.string().min(2).max(2000),
   transportToWork: commuteTransportSchema,
-  commuteDistance: commuteDistanceSchema,
-  commuteTime: commuteTimeSchema,
-  followupBestTime: followupTimeSchema,
-  hardestPart: z.string().min(2).max(2000),
+  commuteDistance: optionalSelect(commuteDistanceSchema),
+  commuteTime: optionalSelect(commuteTimeSchema),
+  followupBestTime: optionalSelect(followupTimeSchema),
+  hardestPart: optionalTextField,
   extraNotes: z.string().max(2000).optional().default(""),
   consentConfirmed: z.literal(true)
-});
+})
+  .superRefine((answers, context) => {
+    if (answers.transportToWork === "home_office") {
+      return;
+    }
+
+    if (!answers.commuteDistance) {
+      context.addIssue({
+        code: "custom",
+        path: ["commuteDistance"],
+        message: "Selecciona una opcion."
+      });
+    }
+
+    if (!answers.commuteTime) {
+      context.addIssue({
+        code: "custom",
+        path: ["commuteTime"],
+        message: "Selecciona una opcion."
+      });
+    }
+  });
 
 export type OnboardingAnswersInput = z.infer<typeof onboardingAnswersSchema>;

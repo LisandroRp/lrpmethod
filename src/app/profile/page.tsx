@@ -1,14 +1,15 @@
 import { redirect } from "next/navigation";
 
 import { ChangePasswordForm } from "@/features/profile/components/ChangePasswordForm";
+import { ProfileAvatarUploader } from "@/features/profile/components/ProfileAvatarUploader";
+import { ProfileSubscriptionActions } from "@/features/profile/components/ProfileSubscriptionActions";
 import { LandingHeader } from "@/features/landing/components/LandingHeader";
 import { getLandingContent } from "@/features/landing/i18n/messages";
 import { AppLocale } from "@/features/landing/i18n/types";
 import { hasSubmittedOnboardingAnswerByUserId } from "@/lib/server/onboarding-admin";
-import { findCurrentActiveSubscriptionByUserId } from "@/lib/server/supabase-admin";
+import { findCurrentActiveSubscriptionByUserId, findProfileById } from "@/lib/server/supabase-admin";
 import { getCurrentAuthenticatedUser } from "@/lib/server/supabase-auth";
 import { getRequestLocale } from "@/lib/i18n/get-request-locale";
-import { Avatar } from "@/features/landing/components/Avatar";
 
 function getProfileCopy(locale: AppLocale) {
   if (locale === "es") {
@@ -25,6 +26,11 @@ function getProfileCopy(locale: AppLocale) {
       noPlan: "Sin plan activo",
       onboardingSubmitted: "Completado",
       onboardingPending: "Pendiente",
+      avatarUploadLabel: "Cambiar foto de perfil",
+      avatarUploadingLabel: "Subiendo foto...",
+      avatarConfirmUploadLabel: "Confirmar",
+      avatarCancelUploadLabel: "Cancelar foto",
+      avatarUploadErrorMessage: "No pudimos subir la foto. Intentalo de nuevo.",
       changePasswordTitle: "Cambiar contraseña",
       changePasswordDescription: "Actualiza tu contraseña usando tu contraseña actual.",
       changePasswordOpenLabel: "Abrir",
@@ -54,6 +60,11 @@ function getProfileCopy(locale: AppLocale) {
     noPlan: "No active plan",
     onboardingSubmitted: "Completed",
     onboardingPending: "Pending",
+    avatarUploadLabel: "Change profile photo",
+    avatarUploadingLabel: "Uploading photo...",
+    avatarConfirmUploadLabel: "Confirm",
+    avatarCancelUploadLabel: "Cancel photo",
+    avatarUploadErrorMessage: "We could not upload the photo. Please try again.",
     changePasswordTitle: "Change password",
     changePasswordDescription: "Update your password using your current password.",
     changePasswordOpenLabel: "Open",
@@ -80,13 +91,15 @@ export default async function ProfilePage() {
     redirect("/?auth=1");
   }
 
-  const [subscriptionResult, onboardingResult] = await Promise.allSettled([
+  const [subscriptionResult, onboardingResult, profileResult] = await Promise.allSettled([
     findCurrentActiveSubscriptionByUserId(user.id),
-    hasSubmittedOnboardingAnswerByUserId(user.id)
+    hasSubmittedOnboardingAnswerByUserId(user.id),
+    findProfileById(user.id)
   ]);
 
   const activePlanCode = subscriptionResult.status === "fulfilled" ? subscriptionResult.value?.plan_code ?? null : null;
   const onboardingSubmitted = onboardingResult.status === "fulfilled" ? onboardingResult.value : false;
+  const profile = profileResult.status === "fulfilled" ? profileResult.value : null;
   const planNameByCode = content.pricing.plans.reduce<Record<string, string>>((acc, plan) => {
     acc[plan.code] = plan.name;
     return acc;
@@ -94,8 +107,8 @@ export default async function ProfilePage() {
 
   const ddClassNames="text-primary mt-1 text-sm font-medium sm:text-base truncate"
   const displayedPlanName = activePlanCode ? planNameByCode[activePlanCode] ?? profileCopy.noPlan : profileCopy.noPlan;
-  const fullName = user.user_metadata?.full_name?.trim() || profileCopy.noName;
-  const email = user.email?.trim() || profileCopy.noEmail;
+  const fullName = profile?.fullName?.trim() || user.user_metadata?.full_name?.trim() || profileCopy.noName;
+  const email = profile?.email?.trim() || user.email?.trim() || profileCopy.noEmail;
 
   return (
     <div className="bg-canvas text-primary min-h-screen">
@@ -104,7 +117,15 @@ export default async function ProfilePage() {
       <main className="px-4 py-8 sm:px-6 sm:py-10">
         <div className="mx-auto w-full max-w-3xl">
           <div className="flex flex-row gap-5">
-          <Avatar {...{content}} containerClassName="h-20 w-20 flex-shrink-0" iconClassName="h-14 w-14"/>
+          <ProfileAvatarUploader
+            content={content}
+            initialAvatarUrl={profile?.avatarUrl ?? null}
+            uploadLabel={profileCopy.avatarUploadLabel}
+            uploadingLabel={profileCopy.avatarUploadingLabel}
+            confirmUploadLabel={profileCopy.avatarConfirmUploadLabel}
+            cancelUploadLabel={profileCopy.avatarCancelUploadLabel}
+            uploadErrorMessage={profileCopy.avatarUploadErrorMessage}
+          />
           <div>
           <header className="mb-5">
             <p className="text-accent text-xs font-semibold tracking-[0.2em] uppercase">{profileCopy.sectionKicker}</p>
@@ -136,6 +157,9 @@ export default async function ProfilePage() {
               </div>
             </dl>
           </section>
+          {activePlanCode ? (
+            <ProfileSubscriptionActions authContent={content.auth} planName={planNameByCode[activePlanCode] ?? displayedPlanName} />
+          ) : null}
           <ChangePasswordForm
             copy={{
               title: profileCopy.changePasswordTitle,

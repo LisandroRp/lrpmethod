@@ -1,4 +1,5 @@
 import { AppLocale, LandingContent } from "@/features/landing/i18n/types";
+import { getPlanPriceLabel } from "@/lib/plans/pricing";
 
 const messages: Record<AppLocale, LandingContent> = {
   en: {
@@ -79,7 +80,7 @@ const messages: Record<AppLocale, LandingContent> = {
         {
           code: "intermediate",
           name: "Intermediate",
-          price: "$33.500",
+          price: "$44.500",
           period: "/month",
           description: "Best value for steady progress.",
           features: [
@@ -94,7 +95,7 @@ const messages: Record<AppLocale, LandingContent> = {
         {
           code: "premium",
           name: "Premium",
-          price: "$59.970",
+          price: "$69.750",
           period: "/month",
           description: "Complete support.",
           features: [
@@ -185,6 +186,8 @@ const messages: Record<AppLocale, LandingContent> = {
       emailLabel: "Email",
       passwordLabel: "Password",
       confirmPasswordLabel: "Confirm password",
+      showPasswordLabel: "Show password",
+      hidePasswordLabel: "Hide password",
       loginCta: "Log in",
       signupCta: "Create account",
       forgotPasswordCta: "Send reset email",
@@ -214,6 +217,7 @@ const messages: Record<AppLocale, LandingContent> = {
       noPlanLabel: "No active plan",
       profileLabel: "Profile",
       myPlanLabel: "My Plan",
+      nutritionLabel: "Nutrition",
       subscribersLabel: "Subscribers",
       formLabel: "Form",
       cancelSubscriptionLabel: "Unsubscribe",
@@ -308,7 +312,7 @@ const messages: Record<AppLocale, LandingContent> = {
         {
           code: "intermediate",
           name: "Intermedio",
-          price: "$33.500",
+          price: "$44.500",
           period: "/mes",
           description: "La mejor relacion precio-resultado.",
           features: [
@@ -323,7 +327,7 @@ const messages: Record<AppLocale, LandingContent> = {
         {
           code: "premium",
           name: "Premium",
-          price: "$59.970",
+          price: "$69.750",
           period: "/mes",
           description: "Acompanamiento completo.",
           features: [
@@ -414,6 +418,8 @@ const messages: Record<AppLocale, LandingContent> = {
       emailLabel: "Email",
       passwordLabel: "Contraseña",
       confirmPasswordLabel: "Confirmar contraseña",
+      showPasswordLabel: "Mostrar contraseña",
+      hidePasswordLabel: "Ocultar contraseña",
       loginCta: "Ingresar",
       signupCta: "Crear cuenta",
       forgotPasswordCta: "Enviar email de recuperacion",
@@ -443,6 +449,7 @@ const messages: Record<AppLocale, LandingContent> = {
       noPlanLabel: "Sin plan activo",
       profileLabel: "Perfil",
       myPlanLabel: "Mi Plan",
+      nutritionLabel: "Alimentacion",
       subscribersLabel: "Subscriptores",
       formLabel: "Formulario",
       cancelSubscriptionLabel: "Desuscribirme",
@@ -462,5 +469,16 @@ const messages: Record<AppLocale, LandingContent> = {
 };
 
 export function getLandingContent(locale: AppLocale): LandingContent {
-  return messages[locale];
+  const content = messages[locale];
+
+  return {
+    ...content,
+    pricing: {
+      ...content.pricing,
+      plans: content.pricing.plans.map((plan) => ({
+        ...plan,
+        price: getPlanPriceLabel(plan.code)
+      }))
+    }
+  };
 }

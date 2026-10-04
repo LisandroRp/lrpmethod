@@ -50,7 +50,6 @@ create table if not exists public.routine_day_exercises (
   reps_max integer null check (reps_max >= 1),
   rest_seconds integer null check (rest_seconds >= 0),
   rir numeric(3,1) null check (rir >= 0 and rir <= 5),
-  tempo text null,
   notes text null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),

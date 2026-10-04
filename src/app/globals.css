@@ -337,6 +337,79 @@ a {
   border-color: var(--color-accent);
 }
 
+.profile-avatar-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.profile-avatar-button {
+  position: relative;
+  display: inline-flex;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.profile-avatar-button:disabled {
+  cursor: wait;
+  opacity: 0.75;
+}
+
+.profile-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background-color: color-mix(in oklch, var(--color-canvas) 68%, transparent);
+  color: var(--color-accent);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.profile-avatar-button:hover .profile-avatar-overlay,
+.profile-avatar-button:focus-visible .profile-avatar-overlay {
+  opacity: 1;
+}
+
+.profile-avatar-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.55rem;
+  transform: translateX(-3px);
+  width: calc(100% + 15px);
+}
+
+.profile-avatar-action {
+  display: inline-flex;
+  height: 1.65rem;
+  width: 1.65rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  background-color: var(--color-surface);
+  color: var(--color-accent);
+  cursor: pointer;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+.profile-avatar-action:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.profile-avatar-action-confirm {
+  background-color: color-mix(in oklch, var(--color-accent) 22%, var(--color-canvas));
+}
+
 .header-account-skeleton {
   display: inline-block;
   width: 2.15rem;
@@ -381,6 +454,15 @@ a {
 .profile-menu-action:hover {
   color: var(--color-accent);
   opacity: 0.95;
+}
+
+.profile-menu-action-admin {
+  color: var(--color-accent);
+}
+
+.profile-menu-action-admin:hover {
+  color: var(--color-accent);
+  opacity: 1;
 }
 
 @keyframes headerSkeletonPulse {
@@ -628,6 +710,73 @@ a {
 
 .modal-backdrop {
   background-color: color-mix(in oklch, var(--color-canvas) 65%, transparent);
+}
+
+.admin-routine-count-link {
+  color: var(--color-primary);
+  text-decoration: none;
+  text-underline-offset: 4px;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+.admin-routine-count-link:hover {
+  color: var(--color-accent);
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--color-accent);
+}
+
+.admin-form-link {
+  border-color: var(--color-border-subtle);
+  color: var(--color-primary);
+  background-color: transparent;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.admin-form-link:hover {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-ink-strong);
+  transform: translateY(-2px);
+}
+
+.admin-routine-action-button {
+  color: var(--color-primary);
+  background-color: transparent;
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.admin-routine-action-button:hover,
+.admin-routine-action-button:focus-visible {
+  color: var(--color-ink-strong) !important;
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 22px -16px color-mix(in oklch, var(--color-accent) 45%, transparent);
+}
+
+.admin-routine-action-button:hover svg,
+.admin-routine-action-button:focus-visible svg {
+  color: var(--color-ink-strong) !important;
+  stroke: var(--color-ink-strong) !important;
+}
+
+.admin-routine-action-button:disabled:hover {
+  color: var(--color-primary) !important;
+  background-color: transparent;
+  border-color: var(--color-border-subtle);
+  transform: none;
+  box-shadow: none;
+}
+
+.admin-routine-action-button:disabled:hover svg {
+  color: var(--color-primary) !important;
+  stroke: var(--color-primary) !important;
 }
 
 .routine-guide-overlay {

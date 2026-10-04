@@ -4,14 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { MouseEvent, useEffect, useMemo, useRef, useState } from "react";
-import { TbLogout2 } from "react-icons/tb";
+import { TbLogout2, TbMenu2, TbX } from "react-icons/tb";
 
 import { LoadingButton } from "@/components/composed/LoadingButton";
 import { useAccount } from "@/features/contexts/AccountContext";
 import { AuthModal } from "@/features/landing/components/AuthModal";
 import { SectionContainer } from "@/features/landing/components/SectionContainer";
 import { LandingContent } from "@/features/landing/i18n/types";
-import { useModal } from "@/features/contexts/ModalContext";
 import { Avatar } from "./Avatar";
 
 type LandingHeaderProps = {
@@ -51,7 +50,6 @@ function scrollToHash(event: MouseEvent<HTMLAnchorElement>, href: string) {
 
 export function LandingHeader({ content, showSectionLinks = true }: LandingHeaderProps) {
   const { user: accountUser, activePlanCode, isLoading: isAccountLoading, refreshAccount, clearAccount } = useAccount();
-  const { openUnsubscribeModal } = useModal();
   const pathname = usePathname();
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -61,14 +59,13 @@ export function LandingHeader({ content, showSectionLinks = true }: LandingHeade
   const userMenuRef = useRef<HTMLDivElement | null>(null);
 
   const navItems = useMemo(() => {
-    if (!showSectionLinks) {
-      return [];
-    }
+    const landingPrefix = showSectionLinks ? "" : "/";
+
     return [
-      { label: content.nav.howItWorks, href: "#how-it-works" },
-      { label: content.nav.benefits, href: "#benefits" },
-      { label: content.nav.plans, href: "#plans" },
-      { label: content.nav.faq, href: "#faq" }
+      { label: content.nav.howItWorks, href: `${landingPrefix}#how-it-works` },
+      { label: content.nav.benefits, href: `${landingPrefix}#benefits` },
+      { label: content.nav.plans, href: `${landingPrefix}#plans` },
+      { label: content.nav.faq, href: `${landingPrefix}#faq` }
     ];
   }, [content, showSectionLinks]);
 
@@ -112,8 +109,10 @@ export function LandingHeader({ content, showSectionLinks = true }: LandingHeade
 
   function handleNavClick(event: MouseEvent<HTMLAnchorElement>, href: string) {
     if (!href.startsWith("#")) {
+      setIsMobileMenuOpen(false);
       return;
     }
+
     scrollToHash(event, href);
     setIsMobileMenuOpen(false);
   }
@@ -129,7 +128,7 @@ export function LandingHeader({ content, showSectionLinks = true }: LandingHeade
       setIsUserMenuOpen(false);
 
       const isPrivateRoute =
-        pathname === "/profile" || pathname === "/my-plan" || pathname.startsWith("/onboarding") || pathname.startsWith("/admin");
+        pathname === "/profile" || pathname === "/my-plan" || pathname === "/nutrition" || pathname.startsWith("/onboarding") || pathname.startsWith("/admin");
       if (isPrivateRoute) {
         router.push("/");
       }
@@ -180,7 +179,7 @@ export function LandingHeader({ content, showSectionLinks = true }: LandingHeade
                 aria-label={content.auth.accountLabel}
                 onClick={() => setIsUserMenuOpen((current) => !current)}
               >
-                <Avatar {...{content}}/>
+                <Avatar content={content} avatarUrl={accountUser.avatarUrl} />
               </button>
 
               {isUserMenuOpen ? (
@@ -197,37 +196,18 @@ export function LandingHeader({ content, showSectionLinks = true }: LandingHeade
                     <Link href="/my-plan" className="profile-menu-action" onClick={() => setIsUserMenuOpen(false)}>
                       {content.auth.myPlanLabel}
                     </Link>
+                    <Link href="/nutrition" className="profile-menu-action" onClick={() => setIsUserMenuOpen(false)}>
+                      {content.auth.nutritionLabel}
+                    </Link>
                     {activePlanCode ? (
                       <Link href="/onboarding" className="profile-menu-action" onClick={() => setIsUserMenuOpen(false)}>
                         {content.auth.formLabel}
                       </Link>
                     ) : null}
                     {accountUser?.isAdmin ? (
-                      <Link href="/admin/subscribers" className="profile-menu-action" onClick={() => setIsUserMenuOpen(false)}>
+                      <Link href="/admin/subscribers" className="profile-menu-action profile-menu-action-admin" onClick={() => setIsUserMenuOpen(false)}>
                         {content.auth.subscribersLabel}
                       </Link>
-                    ) : null}
-                    {activePlanCode ? (
-                      <button
-                        type="button"
-                        className="profile-menu-action"
-                        onClick={() => {
-                          openUnsubscribeModal({
-                            planName: planNameByCode[activePlanCode],
-                            onConfirm: async () => {
-                              const response = await fetch("/api/subscription/cancel", { method: "POST" });
-                              const payload = (await response.json()) as { ok: boolean };
-                              if (!response.ok || !payload.ok) {
-                                throw new Error("cancel_failed");
-                              }
-                              await refreshAccount();
-                            }
-                          });
-                          setIsUserMenuOpen(false);
-                        }}
-                      >
-                        {content.auth.cancelSubscriptionLabel}
-                      </button>
                     ) : null}
                     <LoadingButton type="button" isLoading={isLoggingOut} className="profile-menu-action" onClick={handleLogout}>
                       <LogoutLabel text={content.nav.logout} />
@@ -252,13 +232,9 @@ export function LandingHeader({ content, showSectionLinks = true }: LandingHeade
           onClick={() => setIsMobileMenuOpen((prev) => !prev)}
         >
           {isMobileMenuOpen ? (
-            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-            </svg>
+            <TbX className="h-6 w-6" aria-hidden="true" />
           ) : (
-            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M4 7H20M4 12H20M4 17H20" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-            </svg>
+            <TbMenu2 className="h-6 w-6" aria-hidden="true" />
           )}
         </button>
       </SectionContainer>
@@ -266,7 +242,7 @@ export function LandingHeader({ content, showSectionLinks = true }: LandingHeade
       <div
         id="mobile-nav"
         className={`bg-surface border-subtle overflow-hidden transition-all duration-300 ease-out sm:hidden ${
-          isMobileMenuOpen ? "max-h-72 border-t opacity-100" : "max-h-0 border-t-0 opacity-0"
+          isMobileMenuOpen ? "max-h-96 border-t opacity-100" : "max-h-0 border-t-0 opacity-0"
         }`}
       >
         <SectionContainer className="py-3">
@@ -293,37 +269,18 @@ export function LandingHeader({ content, showSectionLinks = true }: LandingHeade
                   <Link href="/my-plan" className="profile-menu-action w-full" onClick={() => setIsMobileMenuOpen(false)}>
                     {content.auth.myPlanLabel}
                   </Link>
+                  <Link href="/nutrition" className="profile-menu-action w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                    {content.auth.nutritionLabel}
+                  </Link>
                   {activePlanCode ? (
                     <Link href="/onboarding" className="profile-menu-action w-full" onClick={() => setIsMobileMenuOpen(false)}>
                       {content.auth.formLabel}
                     </Link>
                   ) : null}
                   {accountUser?.isAdmin ? (
-                    <Link href="/admin/subscribers" className="profile-menu-action w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Link href="/admin/subscribers" className="profile-menu-action profile-menu-action-admin w-full" onClick={() => setIsMobileMenuOpen(false)}>
                       {content.auth.subscribersLabel}
                     </Link>
-                  ) : null}
-                  {activePlanCode ? (
-                    <button
-                      type="button"
-                      className="profile-menu-action w-full"
-                      onClick={() => {
-                        openUnsubscribeModal({
-                          planName: planNameByCode[activePlanCode],
-                          onConfirm: async () => {
-                            const response = await fetch("/api/subscription/cancel", { method: "POST" });
-                            const payload = (await response.json()) as { ok: boolean };
-                            if (!response.ok || !payload.ok) {
-                              throw new Error("cancel_failed");
-                            }
-                            await refreshAccount();
-                          }
-                        });
-                        setIsMobileMenuOpen(false);
-                      }}
-                    >
-                      {content.auth.cancelSubscriptionLabel}
-                    </button>
                   ) : null}
                   <LoadingButton
                     type="button"

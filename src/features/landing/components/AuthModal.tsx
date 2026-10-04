@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { TbX } from "react-icons/tb";
+import { TbEye, TbEyeOff, TbX } from "react-icons/tb";
 
 import { LoadingButton } from "@/components/composed/LoadingButton";
 import { LandingContent } from "@/features/landing/i18n/types";
@@ -63,6 +63,10 @@ export function AuthModal({ content, isOpen, onClose, onAuthenticated, checkoutM
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
+  const [hasConfirmPasswordBlurred, setHasConfirmPasswordBlurred] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
@@ -96,6 +100,11 @@ export function AuthModal({ content, isOpen, onClose, onAuthenticated, checkoutM
 
     try {
       if (mode === "signup") {
+        if (password !== confirmPassword) {
+          setErrorMessage(content.passwordMismatchMessage);
+          return;
+        }
+
         const response = await fetch("/api/auth/signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -167,6 +176,11 @@ export function AuthModal({ content, isOpen, onClose, onAuthenticated, checkoutM
 
   function switchMode(nextMode: Mode) {
     setMode(nextMode);
+    setPassword("");
+    setConfirmPassword("");
+    setIsPasswordVisible(false);
+    setIsConfirmPasswordVisible(false);
+    setHasConfirmPasswordBlurred(false);
     setErrorMessage(null);
     setInfoMessage(null);
   }
@@ -191,6 +205,18 @@ export function AuthModal({ content, isOpen, onClose, onAuthenticated, checkoutM
       onClick: () => switchMode("login")
     }
   ];
+  const trimmedFullName = fullName.trim();
+  const trimmedEmail = email.trim();
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
+  const isPasswordValid = password.length >= 6;
+  const hasConfirmPasswordMismatch = Boolean(confirmPassword) && password !== confirmPassword;
+  const showConfirmPasswordMismatch = mode === "signup" && hasConfirmPasswordBlurred && hasConfirmPasswordMismatch;
+  const canSubmit =
+    mode === "signup"
+      ? Boolean(trimmedFullName) && isEmailValid && isPasswordValid && password === confirmPassword
+      : mode === "login"
+        ? isEmailValid && Boolean(password)
+        : isEmailValid;
 
   return (
     <div className="modal-backdrop fixed inset-0 z-30 flex items-center justify-center p-4">
@@ -212,7 +238,9 @@ export function AuthModal({ content, isOpen, onClose, onAuthenticated, checkoutM
         <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
           {mode === "signup" ? (
             <label className="block">
-              <span className="text-muted mb-1 block text-xs">{content.nameLabel}</span>
+              <span className="text-muted mb-1 block text-xs">
+                {content.nameLabel} <span className="text-accent">*</span>
+              </span>
               <input
                 required
                 value={fullName}
@@ -223,7 +251,9 @@ export function AuthModal({ content, isOpen, onClose, onAuthenticated, checkoutM
           ) : null}
 
           <label className="block">
-            <span className="text-muted mb-1 block text-xs">{content.emailLabel}</span>
+            <span className="text-muted mb-1 block text-xs">
+              {content.emailLabel} <span className="text-accent">*</span>
+            </span>
             <input
               required
               type="email"
@@ -235,15 +265,65 @@ export function AuthModal({ content, isOpen, onClose, onAuthenticated, checkoutM
 
           {mode !== "forgotPassword" ? (
             <label className="block">
-              <span className="text-muted mb-1 block text-xs">{content.passwordLabel}</span>
-              <input
-                required
-                type="password"
-                minLength={6}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="bg-canvas border-subtle w-full rounded-lg border px-3 py-2 text-sm"
-              />
+              <span className="text-muted mb-1 block text-xs">
+                {content.passwordLabel} <span className="text-accent">*</span>
+              </span>
+              <span className="bg-canvas border-subtle flex w-full items-center rounded-lg border">
+                <input
+                  required
+                  type={isPasswordVisible ? "text" : "password"}
+                  minLength={6}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="w-full bg-transparent px-3 py-2 text-sm outline-none"
+                />
+                <button
+                  type="button"
+                  className="text-muted hover:text-primary flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center"
+                  onClick={() => setIsPasswordVisible((current) => !current)}
+                  aria-label={isPasswordVisible ? content.hidePasswordLabel : content.showPasswordLabel}
+                >
+                  {isPasswordVisible ? <TbEyeOff className="h-5 w-5" aria-hidden="true" /> : <TbEye className="h-5 w-5" aria-hidden="true" />}
+                </button>
+              </span>
+            </label>
+          ) : null}
+
+          {mode === "signup" ? (
+            <label className="block">
+              <span className="text-muted mb-1 block text-xs">
+                {content.confirmPasswordLabel} <span className="text-accent">*</span>
+              </span>
+              <span className="bg-canvas border-subtle flex w-full items-center rounded-lg border">
+                <input
+                  required
+                  type={isConfirmPasswordVisible ? "text" : "password"}
+                  minLength={6}
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  onBlur={() => setHasConfirmPasswordBlurred(true)}
+                  aria-invalid={showConfirmPasswordMismatch}
+                  aria-describedby={showConfirmPasswordMismatch ? "signup-confirm-password-error" : undefined}
+                  className="w-full bg-transparent px-3 py-2 text-sm outline-none"
+                />
+                <button
+                  type="button"
+                  className="text-muted hover:text-primary flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center"
+                  onClick={() => setIsConfirmPasswordVisible((current) => !current)}
+                  aria-label={isConfirmPasswordVisible ? content.hidePasswordLabel : content.showPasswordLabel}
+                >
+                  {isConfirmPasswordVisible ? (
+                    <TbEyeOff className="h-5 w-5" aria-hidden="true" />
+                  ) : (
+                    <TbEye className="h-5 w-5" aria-hidden="true" />
+                  )}
+                </button>
+              </span>
+              {showConfirmPasswordMismatch ? (
+                <p id="signup-confirm-password-error" className="text-accent mt-1 text-xs">
+                  {content.passwordMismatchMessage}
+                </p>
+              ) : null}
             </label>
           ) : null}
 
@@ -260,6 +340,7 @@ export function AuthModal({ content, isOpen, onClose, onAuthenticated, checkoutM
           <LoadingButton
             type="submit"
             isLoading={isSubmitting}
+            disabled={!canSubmit}
             className="btn-primary mt-2 inline-flex w-full cursor-pointer items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-75"
           >
             {mode === "signup" ? content.signupCta : mode === "forgotPassword" ? content.forgotPasswordCta : content.loginCta}

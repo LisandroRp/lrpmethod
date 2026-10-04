@@ -108,6 +108,8 @@ export type LandingContent = {
     emailLabel: string;
     passwordLabel: string;
     confirmPasswordLabel: string;
+    showPasswordLabel: string;
+    hidePasswordLabel: string;
     loginCta: string;
     signupCta: string;
     forgotPasswordCta: string;
@@ -137,6 +139,7 @@ export type LandingContent = {
     noPlanLabel: string;
     profileLabel: string;
     myPlanLabel: string;
+    nutritionLabel: string;
     subscribersLabel: string;
     formLabel: string;
     cancelSubscriptionLabel: string;

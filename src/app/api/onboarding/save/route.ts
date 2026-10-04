@@ -62,7 +62,13 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    const status = message.toLowerCase().includes("locked") ? 409 : 500;
+    const lowerMessage = message.toLowerCase();
+    const status =
+      lowerMessage.includes("locked")
+        ? 409
+        : lowerMessage.includes("formato de imagen") || lowerMessage.includes("limite de 5 mb")
+          ? 400
+          : 500;
     return NextResponse.json({ ok: false, error: message }, { status });
   }
 }

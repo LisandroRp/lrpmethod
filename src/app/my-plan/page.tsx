@@ -4,7 +4,12 @@ import { MyPlanSections } from "@/features/my-plan/components/MyPlanSections";
 import { LandingHeader } from "@/features/landing/components/LandingHeader";
 import { getLandingContent } from "@/features/landing/i18n/messages";
 import { AppLocale } from "@/features/landing/i18n/types";
-import { findCurrentActiveSubscriptionByUserId, listBasicRoutineTemplates } from "@/lib/server/supabase-admin";
+import {
+  findCurrentActiveSubscriptionByUserId,
+  isUserAdmin,
+  listBasicRoutineTemplates,
+  listPersonalizedRoutineTemplatesByUserId
+} from "@/lib/server/supabase-admin";
 import { getCurrentAuthenticatedUser } from "@/lib/server/supabase-auth";
 import { getRequestLocale } from "@/lib/i18n/get-request-locale";
 
@@ -17,14 +22,13 @@ function getMyPlanCopy(locale: AppLocale) {
       customPlansTitle: "Planes personalizados",
       customPlansDescription: "Contenido exclusivo armado para tu objetivo y contexto actual.",
       customPlansEmpty: "No tienes planes personalizados todavía.",
-      customPlansAssigned: "Tu plan personalizado ya esta asignado.",
-      customPlansAssignedHelp: "Pronto veras aqui el contenido completo de entrenamiento y nutricion.",
+      customPlansOpenCtaLabel: "Ver rutina",
       basicPlansTitle: "Planes basicos",
       basicPlansDescription: "Biblioteca de planes base disponible para usuarios con suscripcion activa.",
       basicPlansLocked: "Activa una suscripcion para desbloquear los planes basicos.",
       basicPlansEmpty: "Todavia no hay planes basicos publicados.",
       basicPlansOpenCtaLabel: "Ver rutina",
-      basicPlansCtaLabel: "Disponible pronto"
+      basicPlansCtaLabel: "Adquirir plan"
     };
   }
 
@@ -35,14 +39,13 @@ function getMyPlanCopy(locale: AppLocale) {
     customPlansTitle: "Personalized plans",
     customPlansDescription: "Exclusive content tailored to your current goal and context.",
     customPlansEmpty: "You do not have personalized plans yet.",
-    customPlansAssigned: "Your personalized plan is already assigned.",
-    customPlansAssignedHelp: "You will soon see the full training and nutrition content here.",
+    customPlansOpenCtaLabel: "View routine",
     basicPlansTitle: "Basic plans",
     basicPlansDescription: "Base plan library available for users with an active subscription.",
     basicPlansLocked: "Activate a subscription to unlock the basic plans.",
     basicPlansEmpty: "No basic plans published yet.",
     basicPlansOpenCtaLabel: "View routine",
-    basicPlansCtaLabel: "Coming soon"
+    basicPlansCtaLabel: "Get a plan"
   };
 }
 
@@ -56,13 +59,14 @@ export default async function MyPlanPage() {
     redirect("/?auth=1");
   }
 
-  const [subscription, basicPlans] = await Promise.all([
+  const [subscription, basicPlans, personalizedPlans, admin] = await Promise.all([
     findCurrentActiveSubscriptionByUserId(user.id),
-    listBasicRoutineTemplates(locale)
+    listBasicRoutineTemplates(locale),
+    listPersonalizedRoutineTemplatesByUserId(user.id),
+    isUserAdmin(user.id)
   ]);
   const activePlanCode = subscription?.plan_code ?? null;
-  const hasCustomPlanAssigned = activePlanCode === "intermediate" || activePlanCode === "premium";
-  const hasBasicPlansAccess = Boolean(activePlanCode);
+  const hasBasicPlansAccess = Boolean(activePlanCode) || admin;
 
   return (
     <div className="bg-canvas text-primary min-h-screen">
@@ -78,7 +82,11 @@ export default async function MyPlanPage() {
           <MyPlanSections
             copy={copy}
             basicPlans={basicPlans}
-            hasCustomPlanAssigned={hasCustomPlanAssigned}
+            customPlans={personalizedPlans.map((plan) => ({
+              id: String(plan.id),
+              title: plan.name,
+              description: plan.shortDescription ?? plan.description ?? ""
+            }))}
             hasBasicPlansAccess={hasBasicPlansAccess}
           />
         </div>

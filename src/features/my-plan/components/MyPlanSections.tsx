@@ -14,8 +14,7 @@ export type MyPlanCopy = {
   customPlansTitle: string;
   customPlansDescription: string;
   customPlansEmpty: string;
-  customPlansAssigned: string;
-  customPlansAssignedHelp: string;
+  customPlansOpenCtaLabel: string;
   basicPlansTitle: string;
   basicPlansDescription: string;
   basicPlansLocked: string;
@@ -27,7 +26,7 @@ export type MyPlanCopy = {
 type MyPlanSectionsProps = {
   copy: MyPlanCopy;
   basicPlans: BasicPlanCard[];
-  hasCustomPlanAssigned: boolean;
+  customPlans: BasicPlanCard[];
   hasBasicPlansAccess: boolean;
 };
 
@@ -71,9 +70,9 @@ function BasicPlansSection({
                 {copy.basicPlansOpenCtaLabel}
               </Link>
             ) : (
-              <button type="button" className="btn-secondary btn-static mt-4 w-full text-center" disabled>
+              <Link href="/#plans" className="btn-secondary mt-4 block w-full text-center">
                 {copy.basicPlansCtaLabel}
-              </button>
+              </Link>
             )}
           </article>
         ))}
@@ -88,16 +87,41 @@ function BasicPlansSection({
   );
 }
 
-function CustomPlansSection({ copy, hasCustomPlanAssigned }: { copy: MyPlanCopy; hasCustomPlanAssigned: boolean }) {
+function PlanCard({ plan, ctaLabel }: { plan: BasicPlanCard; ctaLabel: string }) {
+  return (
+    <article className="card flex flex-col justify-between">
+      <div>
+        <h3 className="text-sm font-semibold">{plan.title}</h3>
+        <p
+          className="text-muted mt-2 text-sm"
+          style={{
+            display: "-webkit-box",
+            WebkitLineClamp: 4,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden"
+          }}
+        >
+          {plan.description}
+        </p>
+      </div>
+      <Link href={`/my-plan/${plan.id}`} className="btn-primary mt-4 block w-full text-center">
+        {ctaLabel}
+      </Link>
+    </article>
+  );
+}
+
+function CustomPlansSection({ copy, customPlans }: { copy: MyPlanCopy; customPlans: BasicPlanCard[] }) {
   return (
     <section className="panel border-accent/30 p-5 sm:p-6">
       <h2 className="text-accent text-lg font-semibold">{copy.customPlansTitle}</h2>
       <p className="text-muted mt-1 text-sm">{copy.customPlansDescription}</p>
 
-      {hasCustomPlanAssigned ? (
-        <div className="bg-canvas border-subtle mt-4 rounded-xl border p-4">
-          <p className="text-accent text-sm font-medium">{copy.customPlansAssigned}</p>
-          <p className="text-muted mt-1 text-sm">{copy.customPlansAssignedHelp}</p>
+      {customPlans.length ? (
+        <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-2">
+          {customPlans.map((plan) => (
+            <PlanCard key={plan.id} plan={plan} ctaLabel={copy.customPlansOpenCtaLabel} />
+          ))}
         </div>
       ) : (
         <div className="bg-canvas border-subtle mt-4 rounded-xl border p-4">
@@ -108,7 +132,7 @@ function CustomPlansSection({ copy, hasCustomPlanAssigned }: { copy: MyPlanCopy;
   );
 }
 
-export function MyPlanSections({ copy, basicPlans, hasCustomPlanAssigned, hasBasicPlansAccess }: MyPlanSectionsProps) {
+export function MyPlanSections({ copy, basicPlans, customPlans, hasBasicPlansAccess }: MyPlanSectionsProps) {
   const [selectedSection, setSelectedSection] = useState<SectionTab>("basic");
 
   return (
@@ -130,7 +154,7 @@ export function MyPlanSections({ copy, basicPlans, hasCustomPlanAssigned, hasBas
           {selectedSection === "basic" ? (
             <BasicPlansSection copy={copy} basicPlans={basicPlans} hasBasicPlansAccess={hasBasicPlansAccess} />
           ) : (
-            <CustomPlansSection copy={copy} hasCustomPlanAssigned={hasCustomPlanAssigned} />
+            <CustomPlansSection copy={copy} customPlans={customPlans} />
           )}
         </div>
       </div>
@@ -138,7 +162,7 @@ export function MyPlanSections({ copy, basicPlans, hasCustomPlanAssigned, hasBas
       <div className="hidden items-start gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)]">
         <BasicPlansSection copy={copy} basicPlans={basicPlans} hasBasicPlansAccess={hasBasicPlansAccess} />
         <div className="h-[95%] m-auto min-h-[22rem] w-px bg-[color:var(--color-accent)]" aria-hidden="true" />
-        <CustomPlansSection copy={copy} hasCustomPlanAssigned={hasCustomPlanAssigned} />
+        <CustomPlansSection copy={copy} customPlans={customPlans} />
       </div>
     </>
   );

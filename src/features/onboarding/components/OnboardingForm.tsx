@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
+import { LoadingButton } from "@/components/composed/LoadingButton";
 import { OnboardingAnswersInput, onboardingAnswersSchema } from "@/features/onboarding/schema";
 
 type OnboardingFormProps = {
@@ -37,6 +38,67 @@ type ValidationErrorItem = {
   label: string;
   message: string;
 };
+
+const onboardingPhotoMaxDimension = 1600;
+const onboardingPhotoQuality = 0.82;
+const onboardingPhotoMimeType = "image/jpeg";
+
+function loadImageFromFile(file: File) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const image = new window.Image();
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("No pudimos leer la imagen seleccionada."));
+    };
+    image.src = objectUrl;
+  });
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement) {
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error("No pudimos comprimir la imagen seleccionada."));
+          return;
+        }
+
+        resolve(blob);
+      },
+      onboardingPhotoMimeType,
+      onboardingPhotoQuality
+    );
+  });
+}
+
+async function compressOnboardingPhoto(file: File, filenamePrefix: string) {
+  const image = await loadImageFromFile(file);
+  const scale = Math.min(1, onboardingPhotoMaxDimension / Math.max(image.naturalWidth, image.naturalHeight));
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("No pudimos comprimir la imagen seleccionada.");
+  }
+
+  context.drawImage(image, 0, 0, width, height);
+  const blob = await canvasToBlob(canvas);
+
+  return new File([blob], `${filenamePrefix}.jpg`, {
+    type: onboardingPhotoMimeType,
+    lastModified: Date.now()
+  });
+}
 
 type ApiOnboardingResponse = {
   ok: boolean;
@@ -125,14 +187,9 @@ const requiredSelectFields = new Set<OnboardingFieldKey>([
   "trainingDaysPerWeek",
   "sessionTime",
   "trainingPlace",
-  "medicalAuthorization",
-  "mealSchedule",
-  "mealsPerDay",
-  "nutritionPreference",
   "transportToWork",
   "commuteDistance",
-  "commuteTime",
-  "followupBestTime"
+  "commuteTime"
 ]);
 
 function translateValidationIssue(issue: z.ZodIssue, field?: OnboardingFieldKey) {
@@ -142,6 +199,10 @@ function translateValidationIssue(issue: z.ZodIssue, field?: OnboardingFieldKey)
 
   if (field && requiredSelectFields.has(field) && (issue.code === "invalid_type" || issue.code === "invalid_value")) {
     return "Selecciona una opcion.";
+  }
+
+  if (issue.code === "custom") {
+    return issue.message;
   }
 
   if (issue.code === "invalid_format") {
@@ -278,6 +339,35 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
     setValidationErrors((current) => current.filter((error) => error.field !== key));
   }
 
+  function updateTransportToWork(value: OnboardingAnswersDraftInput["transportToWork"]) {
+    setAnswers((current) => ({
+      ...current,
+      transportToWork: value,
+      commuteDistance: value === "home_office" ? null : current.commuteDistance,
+      commuteTime: value === "home_office" ? null : current.commuteTime
+    }));
+    setFieldErrors((current) => {
+      const next = { ...current };
+      delete next.transportToWork;
+      if (value === "home_office") {
+        delete next.commuteDistance;
+        delete next.commuteTime;
+      }
+      return next;
+    });
+    setValidationErrors((current) =>
+      current.filter((error) => {
+        if (error.field === "transportToWork") {
+          return false;
+        }
+        if (value === "home_office" && (error.field === "commuteDistance" || error.field === "commuteTime")) {
+          return false;
+        }
+        return true;
+      })
+    );
+  }
+
   useEffect(() => {
     if (!frontPhoto) {
       setFrontPreviewUrl(null);
@@ -370,8 +460,10 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
   const sectionClass = "card mt-5";
   const inputClass = "bg-canvas border-subtle w-full rounded-lg border px-3 py-2 text-sm";
   const selectClass = `${inputClass} cursor-pointer`;
+  const disabledSelectClass = `${inputClass} cursor-not-allowed opacity-55`;
   const textareaClass = "bg-canvas border-subtle min-h-24 w-full rounded-lg border px-3 py-2 text-sm";
   const labelClass = "block text-sm";
+  const isHomeOffice = answers.transportToWork === "home_office";
 
   function renderFieldError(field: OnboardingFieldKey) {
     const error = fieldErrors[field];
@@ -381,8 +473,33 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
     return <p className="text-accent mt-1 text-xs">{error}</p>;
   }
 
-  function parseSelectValue<T extends string>(value: string): T | null {
+  function parseSelectValue<T extends string | null>(value: string): T | null {
     return value ? (value as T) : null;
+  }
+
+  async function handlePhotoChange(file: File | null, type: "front" | "side") {
+    if (!file) {
+      if (type === "front") {
+        setFrontPhoto(null);
+      } else {
+        setSidePhoto(null);
+      }
+      return;
+    }
+
+    setMessage("Comprimiendo imagen...");
+
+    try {
+      const compressedPhoto = await compressOnboardingPhoto(file, type === "front" ? "front-photo" : "side-photo");
+      if (type === "front") {
+        setFrontPhoto(compressedPhoto);
+      } else {
+        setSidePhoto(compressedPhoto);
+      }
+      setMessage(null);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No pudimos procesar la imagen seleccionada.");
+    }
   }
 
   const note = useMemo(() => {
@@ -522,12 +639,12 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
             {renderFieldError("injuriesLimitations")}
           </label>
           <label className={labelClass}>
-            Medicacion o condicion relevante *
+            Medicacion o condicion relevante
             <textarea className={textareaClass} value={answers.medicalConditionMedication} onChange={(e) => update("medicalConditionMedication", e.target.value)} disabled={disabled} />
             {renderFieldError("medicalConditionMedication")}
           </label>
           <label className={labelClass}>
-            Autorizacion medica *
+            Autorizacion medica
             <select
               className={selectClass}
               value={answers.medicalAuthorization ?? ""}
@@ -553,12 +670,12 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
             {renderFieldError("currentNutrition")}
           </label>
           <label className={`${labelClass} sm:col-span-2`}>
-            Alergias o alimentos que no consumes *
+            Alergias o alimentos que no consumes
             <textarea className={textareaClass} value={answers.allergiesRestrictions} onChange={(e) => update("allergiesRestrictions", e.target.value)} disabled={disabled} />
             {renderFieldError("allergiesRestrictions")}
           </label>
           <label className={labelClass}>
-            Horarios para comer *
+            Horarios para comer
             <select className={selectClass} value={answers.mealSchedule ?? ""} onChange={(e) => update("mealSchedule", parseSelectValue<OnboardingAnswersInput["mealSchedule"]>(e.target.value))} disabled={disabled}>
               <option value="">Seleccionar...</option>
               <option value="fijos">Fijos</option>
@@ -568,7 +685,7 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
             {renderFieldError("mealSchedule")}
           </label>
           <label className={labelClass}>
-            Comidas por dia *
+            Comidas por dia
             <select className={selectClass} value={answers.mealsPerDay ?? ""} onChange={(e) => update("mealsPerDay", parseSelectValue<OnboardingAnswersInput["mealsPerDay"]>(e.target.value))} disabled={disabled}>
               <option value="">Seleccionar...</option>
               <option value="2">2</option>
@@ -579,7 +696,7 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
             {renderFieldError("mealsPerDay")}
           </label>
           <label className={labelClass}>
-            Guia preferida *
+            Guia preferida
             <select
               className={selectClass}
               value={answers.nutritionPreference ?? ""}
@@ -615,8 +732,9 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
           </label>
           <label className={labelClass}>
             Transporte al trabajo/estudio *
-            <select className={selectClass} value={answers.transportToWork ?? ""} onChange={(e) => update("transportToWork", parseSelectValue<OnboardingAnswersInput["transportToWork"]>(e.target.value))} disabled={disabled}>
+            <select className={selectClass} value={answers.transportToWork ?? ""} onChange={(e) => updateTransportToWork(parseSelectValue<OnboardingAnswersInput["transportToWork"]>(e.target.value))} disabled={disabled}>
               <option value="">Seleccionar...</option>
+              <option value="home_office">Home office / remoto</option>
               <option value="caminando">Caminando</option>
               <option value="bicicleta">Bicicleta</option>
               <option value="moto">Moto</option>
@@ -627,26 +745,26 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
             {renderFieldError("transportToWork")}
           </label>
           <label className={labelClass}>
-            Distancia por trayecto *
-            <select className={selectClass} value={answers.commuteDistance ?? ""} onChange={(e) => update("commuteDistance", parseSelectValue<OnboardingAnswersInput["commuteDistance"]>(e.target.value))} disabled={disabled}>
-              <option value="">Seleccionar...</option>
-              <option value="lt_2">&lt; 2km</option>
-              <option value="2_5">2-5km</option>
-              <option value="5_10">5-10km</option>
-              <option value="10_20">10-20km</option>
-              <option value="gt_20">&gt; 20km</option>
+            Distancia por trayecto {isHomeOffice ? "" : "*"}
+            <select className={isHomeOffice ? disabledSelectClass : selectClass} value={isHomeOffice ? "not_applicable" : answers.commuteDistance ?? ""} onChange={(e) => update("commuteDistance", parseSelectValue<OnboardingAnswersInput["commuteDistance"]>(e.target.value))} disabled={disabled || isHomeOffice}>
+              {isHomeOffice ? <option value="not_applicable">No aplica</option> : <option value="">Seleccionar...</option>}
+              {!isHomeOffice ? <option value="lt_2">&lt; 2km</option> : null}
+              {!isHomeOffice ? <option value="2_5">2-5km</option> : null}
+              {!isHomeOffice ? <option value="5_10">5-10km</option> : null}
+              {!isHomeOffice ? <option value="10_20">10-20km</option> : null}
+              {!isHomeOffice ? <option value="gt_20">&gt; 20km</option> : null}
             </select>
             {renderFieldError("commuteDistance")}
           </label>
           <label className={labelClass}>
-            Tiempo por trayecto *
-            <select className={selectClass} value={answers.commuteTime ?? ""} onChange={(e) => update("commuteTime", parseSelectValue<OnboardingAnswersInput["commuteTime"]>(e.target.value))} disabled={disabled}>
-              <option value="">Seleccionar...</option>
-              <option value="lt_15">&lt; 15min</option>
-              <option value="15_30">15-30min</option>
-              <option value="30_45">30-45min</option>
-              <option value="45_60">45-60min</option>
-              <option value="gt_60">&gt; 60min</option>
+            Tiempo por trayecto {isHomeOffice ? "" : "*"}
+            <select className={isHomeOffice ? disabledSelectClass : selectClass} value={isHomeOffice ? "not_applicable" : answers.commuteTime ?? ""} onChange={(e) => update("commuteTime", parseSelectValue<OnboardingAnswersInput["commuteTime"]>(e.target.value))} disabled={disabled || isHomeOffice}>
+              {isHomeOffice ? <option value="not_applicable">No aplica</option> : <option value="">Seleccionar...</option>}
+              {!isHomeOffice ? <option value="lt_15">&lt; 15min</option> : null}
+              {!isHomeOffice ? <option value="15_30">15-30min</option> : null}
+              {!isHomeOffice ? <option value="30_45">30-45min</option> : null}
+              {!isHomeOffice ? <option value="45_60">45-60min</option> : null}
+              {!isHomeOffice ? <option value="gt_60">&gt; 60min</option> : null}
             </select>
             {renderFieldError("commuteTime")}
           </label>
@@ -657,10 +775,10 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
         <h2 className="section-title text-xl">6) Seguimiento</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <label className={labelClass}>
-            Mejor horario para seguimiento *
+            Mejor horario para seguimiento
             <select className={selectClass} value={answers.followupBestTime ?? ""} onChange={(e) => update("followupBestTime", parseSelectValue<OnboardingAnswersInput["followupBestTime"]>(e.target.value))} disabled={disabled}>
               <option value="">Seleccionar...</option>
-              <option value="manana">Manana</option>
+              <option value="manana">Mañana</option>
               <option value="tarde">Tarde</option>
               <option value="noche">Noche</option>
             </select>
@@ -680,7 +798,12 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
               {!disabled ? (
                 <div className="mt-3 flex flex-wrap gap-2">
                   <label className="btn-secondary inline-flex cursor-pointer items-center justify-center">
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => setFrontPhoto(e.target.files?.[0] ?? null)} />
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                      className="hidden"
+                      onChange={(e) => void handlePhotoChange(e.target.files?.[0] ?? null, "front")}
+                    />
                     {frontPreviewUrl ? "Reemplazar foto" : "Subir foto"}
                   </label>
                   {frontPreviewUrl ? (
@@ -706,7 +829,12 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
               {!disabled ? (
                 <div className="mt-3 flex flex-wrap gap-2">
                   <label className="btn-secondary inline-flex cursor-pointer items-center justify-center">
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => setSidePhoto(e.target.files?.[0] ?? null)} />
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                      className="hidden"
+                      onChange={(e) => void handlePhotoChange(e.target.files?.[0] ?? null, "side")}
+                    />
                     {sidePreviewUrl ? "Reemplazar foto" : "Subir foto"}
                   </label>
                   {sidePreviewUrl ? (
@@ -720,7 +848,7 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
           </div>
 
           <label className={`${labelClass} sm:col-span-2`}>
-            Que te cuesta mas sostener hoy? *
+            Que te cuesta mas sostener hoy?
             <textarea className={textareaClass} value={answers.hardestPart} onChange={(e) => update("hardestPart", e.target.value)} disabled={disabled} />
             {renderFieldError("hardestPart")}
           </label>
@@ -749,12 +877,12 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
 
       {!isSubmitted ? (
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <button type="button" className="btn-secondary" disabled={isSaving || isLoading} onClick={() => void save("draft")}>
+          <LoadingButton type="button" className="btn-secondary" disabled={isLoading} isLoading={isSaving} onClick={() => void save("draft")}>
             {isSaving ? "Guardando..." : "Guardar borrador"}
-          </button>
-          <button type="button" className="btn-primary" disabled={isSaving || isLoading} onClick={() => void save("submit")}>
+          </LoadingButton>
+          <LoadingButton type="button" className="btn-primary" disabled={isLoading} isLoading={isSaving} onClick={() => void save("submit")}>
             {isSaving ? "Enviando..." : "Enviar formulario"}
-          </button>
+          </LoadingButton>
         </div>
       ) : null}
 

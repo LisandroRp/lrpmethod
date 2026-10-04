@@ -16,11 +16,15 @@ export async function GET(request: NextRequest) {
 
   const status = request.nextUrl.searchParams.get("status") ?? "all";
   const plan = request.nextUrl.searchParams.get("plan") ?? "all";
+  const onboarding = request.nextUrl.searchParams.get("onboarding") ?? "all";
+  const routines = request.nextUrl.searchParams.get("routines") ?? "all";
   const q = request.nextUrl.searchParams.get("q") ?? "";
 
   const rows = await listSubscribers({
     status: status as "all" | "active" | "pending" | "canceled",
     plan: plan as "all" | "basic" | "intermediate" | "premium",
+    onboarding: onboarding as "all" | "with" | "without",
+    routines: routines as "all" | "with" | "without",
     q
   });
 

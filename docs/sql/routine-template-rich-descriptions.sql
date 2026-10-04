@@ -39,7 +39,7 @@ set
 ## Como sacarle resultado
 1. Entrena cerca del fallo en las ultimas series (RIR 1-2).
 2. Si completas el maximo de reps del rango, subi carga.
-3. Manten control del tempo en accesorios.
+3. Manten control tecnico en accesorios.
 
 ## Descansos recomendados
 - Compuestos: 2-3 min.
@@ -87,7 +87,7 @@ set
 ## Como progresar en casa
 1. Sube reps dentro del rango semana a semana.
 2. Agrega pausa arriba (sobre todo en gluteos).
-3. Cuando domines el rango, agrega mochila/banda o tempo mas lento.
+3. Cuando domines el rango, agrega mochila/banda o una pausa controlada.
 
 ## Descansos recomendados
 - Superseries: 30-45 seg.
