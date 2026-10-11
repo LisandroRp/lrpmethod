@@ -139,6 +139,8 @@ export type LandingContent = {
     noPlanLabel: string;
     profileLabel: string;
     myPlanLabel: string;
+    chatLabel: string;
+    adminChatLabel: string;
     nutritionLabel: string;
     subscribersLabel: string;
     formLabel: string;

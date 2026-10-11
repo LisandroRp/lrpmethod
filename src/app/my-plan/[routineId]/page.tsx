@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { TbArrowLeft } from "react-icons/tb";
+import { TbArrowLeft, TbMessageQuestion } from "react-icons/tb";
 
 import { LandingHeader } from "@/features/landing/components/LandingHeader";
 import { getLandingContent } from "@/features/landing/i18n/messages";
 import { AppLocale } from "@/features/landing/i18n/types";
+import { canCustomerSendChat } from "@/lib/chat/chat-policy";
 import { DownloadRoutinePdfButton } from "@/features/my-plan/components/DownloadRoutinePdfButton";
 import { RoutineExerciseCard } from "@/features/my-plan/components/RoutineExerciseCard";
 import { RoutineGuidePanel } from "@/features/my-plan/components/RoutineGuidePanel";
@@ -43,6 +44,7 @@ function getRoutineDetailCopy(locale: AppLocale) {
       noDaysMessage: "Esta rutina todavia no tiene dias cargados.",
       noExercisesMessage: "Todavia no hay ejercicios cargados para este dia.",
       downloadPdfLabel: "Descargar PDF",
+      chatLabel: "Chatear con un entrenador",
       guideTitle: "Guia de la rutina",
       guideExpandLabel: "Ver mas",
       guideCollapseLabel: "Ver menos",
@@ -70,6 +72,7 @@ function getRoutineDetailCopy(locale: AppLocale) {
     noDaysMessage: "This routine has no days loaded yet.",
     noExercisesMessage: "There are no exercises loaded for this day yet.",
     downloadPdfLabel: "Download PDF",
+    chatLabel: "Chat with a coach",
     guideTitle: "Routine guide",
     guideExpandLabel: "Show more",
     guideCollapseLabel: "Show less",
@@ -245,11 +248,14 @@ export default async function RoutineDetailPage({ params, searchParams }: Routin
               <TbArrowLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span className="group-hover:underline group-hover:decoration-2 group-hover:underline-offset-4">{backLabel}</span>
             </Link>
-            {canDownloadRoutinePdf ? (
-              <div className="routine-print-action">
-                <DownloadRoutinePdfButton label={copy.downloadPdfLabel} />
-              </div>
-            ) : null}
+            <div className="routine-print-action flex flex-wrap justify-end gap-3">
+              {canCustomerSendChat(subscription?.plan_code ?? null) && !admin ? (
+                <Link href={`/chat?routineId=${numericRoutineId}`} className="text-accent inline-flex items-center gap-1.5 text-sm font-medium hover:underline">
+                  <TbMessageQuestion className="h-4 w-4" aria-hidden="true" /> {copy.chatLabel}
+                </Link>
+              ) : null}
+              {canDownloadRoutinePdf ? <DownloadRoutinePdfButton label={copy.downloadPdfLabel} /> : null}
+            </div>
           </div>
 
           <header className="mt-4">

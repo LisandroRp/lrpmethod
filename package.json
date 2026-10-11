@@ -9,7 +9,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint src --max-warnings=0"
+    "lint": "eslint src --max-warnings=0",
+    "verify:full": "npm run lint && tsc --noEmit && node --test src/lib/chat/*.test.mjs && npm run build"
   },
   "dependencies": {
     "mercadopago": "^2.12.0",

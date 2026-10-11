@@ -7,6 +7,7 @@ import { MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { TbLogout2, TbMenu2, TbX } from "react-icons/tb";
 
 import { LoadingButton } from "@/components/composed/LoadingButton";
+import { getChatMenuDestination } from "@/lib/chat/chat-policy";
 import { useAccount } from "@/features/contexts/AccountContext";
 import { AuthModal } from "@/features/landing/components/AuthModal";
 import { SectionContainer } from "@/features/landing/components/SectionContainer";
@@ -128,7 +129,7 @@ export function LandingHeader({ content, showSectionLinks = true }: LandingHeade
       setIsUserMenuOpen(false);
 
       const isPrivateRoute =
-        pathname === "/profile" || pathname === "/my-plan" || pathname === "/nutrition" || pathname.startsWith("/onboarding") || pathname.startsWith("/admin");
+        pathname === "/profile" || pathname === "/my-plan" || pathname === "/nutrition" || pathname.startsWith("/chat") || pathname.startsWith("/onboarding") || pathname.startsWith("/admin");
       if (isPrivateRoute) {
         router.push("/");
       }
@@ -196,6 +197,9 @@ export function LandingHeader({ content, showSectionLinks = true }: LandingHeade
                     <Link href="/my-plan" className="profile-menu-action" onClick={() => setIsUserMenuOpen(false)}>
                       {content.auth.myPlanLabel}
                     </Link>
+                    <Link href={getChatMenuDestination(Boolean(accountUser?.isAdmin))} className="profile-menu-action" onClick={() => setIsUserMenuOpen(false)}>
+                      {accountUser?.isAdmin ? content.auth.adminChatLabel : content.auth.chatLabel}
+                    </Link>
                     <Link href="/nutrition" className="profile-menu-action" onClick={() => setIsUserMenuOpen(false)}>
                       {content.auth.nutritionLabel}
                     </Link>
@@ -241,8 +245,8 @@ export function LandingHeader({ content, showSectionLinks = true }: LandingHeade
 
       <div
         id="mobile-nav"
-        className={`bg-surface border-subtle overflow-hidden transition-all duration-300 ease-out sm:hidden ${
-          isMobileMenuOpen ? "max-h-96 border-t opacity-100" : "max-h-0 border-t-0 opacity-0"
+        className={`bg-surface border-subtle transition-all duration-300 ease-out sm:hidden ${
+          isMobileMenuOpen ? "max-h-[calc(100dvh-4rem)] overflow-y-auto border-t opacity-100" : "max-h-0 overflow-hidden border-t-0 opacity-0"
         }`}
       >
         <SectionContainer className="py-3">
@@ -268,6 +272,9 @@ export function LandingHeader({ content, showSectionLinks = true }: LandingHeade
                   </Link>
                   <Link href="/my-plan" className="profile-menu-action w-full" onClick={() => setIsMobileMenuOpen(false)}>
                     {content.auth.myPlanLabel}
+                  </Link>
+                  <Link href={getChatMenuDestination(Boolean(accountUser?.isAdmin))} className="profile-menu-action w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                    {accountUser?.isAdmin ? content.auth.adminChatLabel : content.auth.chatLabel}
                   </Link>
                   <Link href="/nutrition" className="profile-menu-action w-full" onClick={() => setIsMobileMenuOpen(false)}>
                     {content.auth.nutritionLabel}

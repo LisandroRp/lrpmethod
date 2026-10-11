@@ -87,6 +87,7 @@ const messages: Record<AppLocale, LandingContent> = {
             "Personalized workout routine",
             "Nutrition guide",
             "2 adjustments per month",
+            "10 chat messages with a coach every 14 days",
             "Download routines in PDF"
           ],
           ctaLabel: "Choose Intermediate",
@@ -103,7 +104,8 @@ const messages: Record<AppLocale, LandingContent> = {
             "Nutrition guide",
             "2 adjustments per month",
             "Download routines in PDF",
-            "Closer WhatsApp follow-up"
+            "Closer WhatsApp follow-up",
+            "Unlimited chat with a coach"
           ],
           ctaLabel: "Choose Premium",
           highlighted: false
@@ -217,6 +219,8 @@ const messages: Record<AppLocale, LandingContent> = {
       noPlanLabel: "No active plan",
       profileLabel: "Profile",
       myPlanLabel: "My Plan",
+      chatLabel: "Chat with a coach",
+      adminChatLabel: "Student chats",
       nutritionLabel: "Nutrition",
       subscribersLabel: "Subscribers",
       formLabel: "Form",
@@ -319,6 +323,7 @@ const messages: Record<AppLocale, LandingContent> = {
             "Rutina personalizada",
             "Guia de alimentacion",
             "2 ajustes mensuales",
+            "10 mensajes a un entrenador cada 14 dias",
             "Descargar rutinas en PDF"
           ],
           ctaLabel: "Elegir Intermedio",
@@ -335,7 +340,8 @@ const messages: Record<AppLocale, LandingContent> = {
             "Guia de alimentacion",
             "2 ajustes mensuales",
             "Descargar rutinas en PDF",
-            "Seguimiento mas cercano por WhatsApp"
+            "Seguimiento mas cercano por WhatsApp",
+            "Chat sin limite de mensajes con un entrenador"
           ],
           ctaLabel: "Elegir Premium",
           highlighted: false
@@ -449,6 +455,8 @@ const messages: Record<AppLocale, LandingContent> = {
       noPlanLabel: "Sin plan activo",
       profileLabel: "Perfil",
       myPlanLabel: "Mi Plan",
+      chatLabel: "Chat con un entrenador",
+      adminChatLabel: "Chats con alumnos",
       nutritionLabel: "Alimentacion",
       subscribersLabel: "Subscriptores",
       formLabel: "Formulario",
