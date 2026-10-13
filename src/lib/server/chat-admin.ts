@@ -21,6 +21,7 @@ export type ChatConversation = {
   customerId: string;
   fullName: string | null;
   email: string | null;
+  planCode: "basic" | "intermediate" | "premium" | null;
   lastMessage: string;
   lastMessageAt: string;
   lastSenderKind: "customer" | "admin";
@@ -149,6 +150,7 @@ export async function listChatConversations(): Promise<ChatConversation[]> {
     customer_id: string;
     full_name: string | null;
     email: string | null;
+    plan_code: "basic" | "intermediate" | "premium" | null;
     last_message: string;
     last_message_at: string;
     last_sender_kind: "customer" | "admin";
@@ -157,6 +159,7 @@ export async function listChatConversations(): Promise<ChatConversation[]> {
     customerId: row.customer_id,
     fullName: row.full_name,
     email: row.email,
+    planCode: row.plan_code,
     lastMessage: row.last_message,
     lastMessageAt: row.last_message_at,
     lastSenderKind: row.last_sender_kind

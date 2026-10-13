@@ -3,7 +3,7 @@
 import { ChangeEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { TbDownload, TbListDetails, TbUpload } from "react-icons/tb";
+import { TbDownload, TbListDetails, TbLoader2, TbUpload } from "react-icons/tb";
 
 import { OnboardingAnswersInput } from "@/features/onboarding/schema";
 import { RoutineImportDraft, routineImportDraftSchema } from "@/lib/routines/routine-import-schema";
@@ -141,14 +141,28 @@ export function AdminRoutineImportPanel({ userId, answers }: AdminRoutineImportP
               <TbDownload className="h-5 w-5" />
               Descargar formulario
             </button>
-            <label className={`btn-primary inline-flex items-center justify-center gap-2 px-4 ${isUploading ? "cursor-wait opacity-70" : "cursor-pointer"}`}>
-              <TbUpload className="h-5 w-5" />
-              {isUploading ? "Validando..." : "Subir rutina"}
+            <label className={`btn-primary relative inline-flex items-center justify-center px-4 ${isUploading ? "cursor-wait opacity-70" : "cursor-pointer"}`} aria-busy={isUploading}>
+              <span className={`inline-flex items-center gap-2 ${isUploading ? "opacity-0" : ""}`}>
+                <TbUpload className="h-5 w-5" />
+                Subir rutina
+              </span>
+              {isUploading ? (
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                  <TbLoader2 className="h-4 w-4 animate-spin" />
+                </span>
+              ) : null}
               <input className="hidden" type="file" accept="application/json,.json" onChange={(event) => void handleUpload(event)} disabled={isUploading} />
             </label>
-            <label className={`btn-secondary inline-flex items-center justify-center gap-2 px-4 ${isUploadingNutrition ? "cursor-wait opacity-70" : "cursor-pointer"}`}>
-              <TbUpload className="h-5 w-5" />
-              {isUploadingNutrition ? "Subiendo..." : "Subir alimentacion"}
+            <label className={`btn-secondary relative inline-flex items-center justify-center px-4 ${isUploadingNutrition ? "cursor-wait opacity-70" : "cursor-pointer"}`} aria-busy={isUploadingNutrition}>
+              <span className={`inline-flex items-center gap-2 ${isUploadingNutrition ? "opacity-0" : ""}`}>
+                <TbUpload className="h-5 w-5" />
+                Subir alimentacion
+              </span>
+              {isUploadingNutrition ? (
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                  <TbLoader2 className="h-4 w-4 animate-spin" />
+                </span>
+              ) : null}
               <input
                 className="hidden"
                 type="file"

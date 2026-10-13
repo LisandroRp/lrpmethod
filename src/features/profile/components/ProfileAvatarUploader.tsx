@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, useRef, useState } from "react";
-import { TbCheck, TbPencil, TbX } from "react-icons/tb";
+import { TbCheck, TbLoader2, TbPencil, TbX } from "react-icons/tb";
 
 import { useAccount } from "@/features/contexts/AccountContext";
 import { Avatar } from "@/features/landing/components/Avatar";
@@ -135,9 +135,10 @@ export function ProfileAvatarUploader({
             className="profile-avatar-action profile-avatar-action-confirm"
             onClick={handleConfirmUpload}
             disabled={isUploading}
-            aria-label={confirmUploadLabel}
+            aria-label={isUploading ? uploadingLabel : confirmUploadLabel}
+            aria-busy={isUploading}
           >
-            <TbCheck className="h-4 w-4" aria-hidden="true" />
+            {isUploading ? <TbLoader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <TbCheck className="h-4 w-4" aria-hidden="true" />}
           </button>
         </div>
       ) : null}

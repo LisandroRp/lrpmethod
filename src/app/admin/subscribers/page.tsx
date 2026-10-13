@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { TbClipboardText } from "react-icons/tb";
+import { TbClipboardText, TbMessageCircle } from "react-icons/tb";
 
 import { AdminSubscribersFilters } from "@/features/admin/components/AdminSubscribersFilters";
 import { AdminSubscriptionHistoryMenu } from "@/features/admin/components/AdminSubscriptionHistoryMenu";
@@ -15,6 +15,7 @@ type PageProps = {
     plan?: string;
     onboarding?: string;
     routines?: string;
+    nutrition?: string;
     q?: string;
   }>;
 };
@@ -33,8 +34,15 @@ function normalizePlan(value: string | undefined) {
   return "all";
 }
 
-function normalizePresenceFilter(value: string | undefined) {
-  if (value === "with") {
+function normalizeOnboardingFilter(value: string | undefined) {
+  if (value === "with" || value === "without") {
+    return value;
+  }
+  return "all";
+}
+
+function normalizePendingResourceFilter(value: string | undefined) {
+  if (value === "without") {
     return value;
   }
   return "all";
@@ -55,11 +63,12 @@ export default async function AdminSubscribersPage({ searchParams }: PageProps) 
   const params = await searchParams;
   const status = normalizeStatus(params.status);
   const plan = normalizePlan(params.plan);
-  const onboarding = normalizePresenceFilter(params.onboarding);
-  const routines = normalizePresenceFilter(params.routines);
+  const onboarding = normalizeOnboardingFilter(params.onboarding);
+  const routines = normalizePendingResourceFilter(params.routines);
+  const nutrition = normalizePendingResourceFilter(params.nutrition);
   const q = params.q?.trim() ?? "";
 
-  const subscribers = await listSubscribers({ status, plan, onboarding, routines, q });
+  const subscribers = await listSubscribers({ status, plan, onboarding, routines, nutrition, q });
 
   return (
     <div className="bg-canvas text-primary min-h-screen">
@@ -67,16 +76,16 @@ export default async function AdminSubscribersPage({ searchParams }: PageProps) 
       <main className="px-4 py-8 sm:px-6 sm:py-10">
         <div className="mx-auto w-full max-w-6xl">
           <div className="mb-5 flex items-center justify-between gap-3">
-            <h1 className="text-2xl font-semibold sm:text-3xl">Subscribers</h1>
+            <h1 className="text-2xl font-semibold sm:text-3xl">Students</h1>
             <Link href="/" className="btn-secondary inline-block">
               Back to landing
             </Link>
           </div>
 
-          <AdminSubscribersFilters status={status} plan={plan} onboarding={onboarding} routines={routines} q={q} />
+          <AdminSubscribersFilters status={status} plan={plan} onboarding={onboarding} routines={routines} nutrition={nutrition} q={q} />
 
           <div className="panel overflow-x-auto">
-            <table className="w-full min-w-[1040px] text-left text-sm">
+            <table className="w-full min-w-[1120px] text-left text-sm">
               <thead className="text-muted border-subtle border-b">
                 <tr>
                   <th className="px-3 py-3 font-medium">User</th>
@@ -88,6 +97,7 @@ export default async function AdminSubscribersPage({ searchParams }: PageProps) 
                   <th className="px-3 py-3 font-medium">Historial</th>
                   <th className="px-3 py-3 text-center font-medium">Rutinas</th>
                   <th className="px-3 py-3 text-center font-medium">Alimentacion</th>
+                  <th className="px-3 py-3 text-center font-medium">Chat</th>
                   <th className="px-3 py-3 text-center font-medium">Formulario</th>
                 </tr>
               </thead>
@@ -136,6 +146,16 @@ export default async function AdminSubscribersPage({ searchParams }: PageProps) 
                       )}
                     </td>
                     <td className="px-3 py-3 text-center">
+                      <Link
+                        href={`/admin/chat/${row.userId}`}
+                        className="admin-form-link inline-flex h-10 w-10 items-center justify-center rounded-full border"
+                        aria-label={`Abrir chat con ${row.fullName ?? row.userId}`}
+                        title={`Abrir chat con ${row.fullName ?? row.userId}`}
+                      >
+                        <TbMessageCircle className="h-5 w-5" aria-hidden="true" />
+                      </Link>
+                    </td>
+                    <td className="px-3 py-3 text-center">
                       {row.hasOnboarding ? (
                         <Link
                           href={`/admin/subscribers/${row.userId}/onboarding`}
@@ -159,8 +179,8 @@ export default async function AdminSubscribersPage({ searchParams }: PageProps) 
                 ))}
                 {!subscribers.length ? (
                   <tr>
-                    <td className="text-muted px-3 py-6" colSpan={10}>
-                      No subscribers found with these filters.
+                    <td className="text-muted px-3 py-6" colSpan={11}>
+                      No students found with these filters.
                     </td>
                   </tr>
                 ) : null}

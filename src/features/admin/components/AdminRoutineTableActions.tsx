@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { TbEdit, TbEye, TbTrash } from "react-icons/tb";
 
+import { LoadingButton } from "@/components/composed/LoadingButton";
+
 type AdminRoutineTableActionsProps = {
   routineId: number;
   userId: string;
@@ -74,9 +76,9 @@ export function AdminRoutineTableActions({ routineId, userId }: AdminRoutineTabl
               <button type="button" className="btn-secondary" onClick={() => setIsConfirmOpen(false)} disabled={isDeleting}>
                 Cancelar
               </button>
-              <button type="button" className="btn-primary" onClick={() => void handleDelete()} disabled={isDeleting}>
-                {isDeleting ? "Eliminando..." : "Eliminar"}
-              </button>
+              <LoadingButton type="button" className="btn-primary" onClick={() => void handleDelete()} isLoading={isDeleting}>
+                Eliminar
+              </LoadingButton>
             </div>
           </div>
         </div>

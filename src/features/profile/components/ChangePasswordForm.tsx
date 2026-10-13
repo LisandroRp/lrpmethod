@@ -156,7 +156,7 @@ export function ChangePasswordForm({ copy }: ChangePasswordFormProps) {
             isLoading={isSubmitting}
             className="btn-primary mt-2 inline-flex w-full cursor-pointer items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-75"
           >
-            {isSubmitting ? copy.loadingLabel : copy.submitLabel}
+            {copy.submitLabel}
           </LoadingButton>
         </form>
       ) : null}

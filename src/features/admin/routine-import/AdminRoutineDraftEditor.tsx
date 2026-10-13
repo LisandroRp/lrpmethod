@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FocusEvent, type SelectHTMLAttributes, useEffect, useMemo, useRef, useState } from "react";
 import { TbChevronDown, TbChevronUp, TbDeviceFloppy, TbExternalLink, TbPlus, TbTrash } from "react-icons/tb";
 
+import { LoadingButton } from "@/components/composed/LoadingButton";
 import { RoutineCombinedItem, RoutineImportDraft, RoutineImportItem, routineImportDraftSchema } from "@/lib/routines/routine-import-schema";
 
 import { getRoutineDraftStorageKey } from "./AdminRoutineImportPanel";
@@ -1012,10 +1013,10 @@ export function AdminRoutineDraftEditor({ userId, formHref, locale = "es", initi
             <TbPlus className="h-5 w-5" />
             Agregar dia
           </button>
-          <button type="button" className="btn-primary inline-flex items-center gap-2" onClick={() => void handleSave()} disabled={isSaving || Boolean(validationMessage)}>
+          <LoadingButton type="button" className="btn-primary inline-flex items-center gap-2" onClick={() => void handleSave()} disabled={Boolean(validationMessage)} isLoading={isSaving}>
             <TbDeviceFloppy className="h-5 w-5" />
-            {isSaving ? "Guardando..." : "Guardar rutina"}
-          </button>
+            Guardar rutina
+          </LoadingButton>
         </div>
       </div>
 

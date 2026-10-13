@@ -125,7 +125,7 @@ export function PricingSection({ content }: PricingSectionProps) {
   }
 
   return (
-    <section id="plans" className="bg-surface section-space">
+    <section id="plans" className="bg-surface section-space" aria-busy={isAccountLoading}>
       <SectionContainer>
         <div className="max-w-2xl">
           <p className="section-kicker">{content.pricing.kicker}</p>
@@ -138,10 +138,10 @@ export function PricingSection({ content }: PricingSectionProps) {
             const isActivePlan = activePlanCode === plan.code;
             const isPremiumComingSoon = plan.code === "premium";
             const isCurrentCheckout = checkoutLoadingPlan === plan.code;
-            const isDisabled = isAccountLoading || isActivePlan || isPremiumComingSoon || checkoutLoadingPlan !== null;
+            const isDisabled = isActivePlan || isPremiumComingSoon || checkoutLoadingPlan !== null;
             const buttonClassName = isActivePlan
-              ? "btn-secondary btn-static mt-6 block w-full text-center"
-              : "btn-primary mt-6 block w-full text-center";
+              ? "btn-secondary btn-static mt-6 w-full text-center"
+              : "btn-primary mt-6 w-full text-center";
             const buttonLabel = isActivePlan ? content.pricing.activePlanCtaLabel : plan.ctaLabel;
 
             return (
@@ -178,10 +178,8 @@ export function PricingSection({ content }: PricingSectionProps) {
                   ))}
                 </ul>
 
-                {isActivePlan ? (
-                  <button type="button" className={buttonClassName} disabled={isDisabled} aria-disabled={isDisabled}>
-                    {buttonLabel}
-                  </button>
+                {isAccountLoading ? (
+                  <div className="pricing-button-skeleton mt-6" aria-hidden="true" />
                 ) : (
                   <LoadingButton
                     type="button"

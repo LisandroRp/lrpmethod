@@ -1,14 +1,16 @@
 import { ButtonHTMLAttributes, ReactNode } from "react";
+import { TbLoader2 } from "react-icons/tb";
 
 type LoadingButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   isLoading?: boolean;
+  spinnerClassName?: string;
   children: ReactNode;
 };
 
-export function LoadingButton({ isLoading = false, disabled, children, className = "", ...rest }: LoadingButtonProps) {
+export function LoadingButton({ isLoading = false, spinnerClassName = "", disabled, children, className = "", ...rest }: LoadingButtonProps) {
   const isDisabled = disabled || isLoading;
   const classes = [
-    "inline-flex items-center justify-center gap-2",
+    "relative inline-flex items-center justify-center",
     "disabled:cursor-not-allowed disabled:opacity-75",
     className
   ]
@@ -17,13 +19,14 @@ export function LoadingButton({ isLoading = false, disabled, children, className
 
   return (
     <button {...rest} disabled={isDisabled} aria-busy={isLoading} className={classes}>
+      <span className={`inline-flex items-center justify-center gap-2 ${isLoading ? "opacity-0" : ""}`}>
+        {children}
+      </span>
       {isLoading ? (
-        <svg viewBox="0 0 24 24" className="h-4 w-4 animate-spin" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" className="opacity-30" />
-          <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
+        <span className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
+          <TbLoader2 className={`h-4 w-4 animate-spin ${spinnerClassName}`} />
+        </span>
       ) : null}
-      {children}
     </button>
   );
 }

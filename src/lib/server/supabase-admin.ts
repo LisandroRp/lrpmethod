@@ -1352,6 +1352,7 @@ type ListSubscribersParams = {
   plan?: PlanCode | "all";
   onboarding?: "all" | "with" | "without";
   routines?: "all" | "with" | "without";
+  nutrition?: "all" | "with" | "without";
   q?: string;
   limit?: number;
 };
@@ -1361,6 +1362,7 @@ export async function listSubscribers(params: ListSubscribersParams) {
   const plan = params.plan ?? "all";
   const onboarding = params.onboarding ?? "all";
   const routines = params.routines ?? "all";
+  const nutrition = params.nutrition ?? "all";
   const q = params.q?.trim().toLowerCase() ?? "";
   const limit = Math.min(Math.max(params.limit ?? 200, 1), 500);
 
@@ -1497,6 +1499,7 @@ export async function listSubscribers(params: ListSubscribersParams) {
     const routineCount = routineCountByUserId.get(userId) ?? 0;
     const nutritionCount = nutritionCountByUserId.get(userId) ?? 0;
     const hasOnboarding = Boolean(onboarding);
+    const hasSubmittedOnboarding = onboarding?.status === "submitted";
 
     return {
       id: selectedSubscription.id,
@@ -1513,6 +1516,7 @@ export async function listSubscribers(params: ListSubscribersParams) {
       hasNutrition: nutritionCount > 0,
       onboardingStatus: onboarding?.status ?? null,
       hasOnboarding,
+      hasSubmittedOnboarding,
       subscriptionHistory: sortedSubscriptions.map((subscription) => ({
         id: subscription.id,
         planCode: subscription.plan_code,
@@ -1524,11 +1528,11 @@ export async function listSubscribers(params: ListSubscribersParams) {
   });
 
   const filtered = merged.filter((row) => {
-    if (onboarding === "with" && !row.hasOnboarding) {
+    if (onboarding === "with" && !row.hasSubmittedOnboarding) {
       return false;
     }
 
-    if (onboarding === "without" && row.hasOnboarding) {
+    if (onboarding === "without" && row.hasSubmittedOnboarding) {
       return false;
     }
 
@@ -1536,7 +1540,15 @@ export async function listSubscribers(params: ListSubscribersParams) {
       return false;
     }
 
-    if (routines === "without" && row.hasRoutines) {
+    if (routines === "without" && (!row.hasSubmittedOnboarding || row.hasRoutines)) {
+      return false;
+    }
+
+    if (nutrition === "with" && !row.hasNutrition) {
+      return false;
+    }
+
+    if (nutrition === "without" && (!row.hasSubmittedOnboarding || row.hasNutrition)) {
       return false;
     }
 
@@ -1548,7 +1560,7 @@ export async function listSubscribers(params: ListSubscribersParams) {
     return haystack.includes(q);
   });
 
-  if (!q && onboarding === "all" && routines === "all") {
+  if (!q && onboarding === "all" && routines === "all" && nutrition === "all") {
     return filtered;
   }
 

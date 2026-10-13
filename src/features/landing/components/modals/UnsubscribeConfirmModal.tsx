@@ -56,7 +56,7 @@ export function UnsubscribeConfirmModal({ content }: UnsubscribeConfirmModalProp
       secondaryLabel={content.auth.cancelSubscriptionConfirmCancelLabel}
       onSecondary={closeUnsubscribeModal}
       secondaryDisabled={isSubmitting}
-      primaryLabel={isSubmitting ? content.auth.cancelSubscriptionLoadingLabel : content.auth.cancelSubscriptionLabel}
+      primaryLabel={content.auth.cancelSubscriptionLabel}
       primaryLoading={isSubmitting}
       onPrimary={() => {
         void handleConfirm();

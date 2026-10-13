@@ -1,21 +1,25 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useTransition, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+
+import { LoadingButton } from "@/components/composed/LoadingButton";
 
 type AdminSubscribersFiltersProps = {
   status: "all" | "active" | "pending" | "canceled";
   plan: "all" | "basic" | "intermediate" | "premium";
-  onboarding: "all" | "with";
-  routines: "all" | "with";
+  onboarding: "all" | "with" | "without";
+  routines: "all" | "without";
+  nutrition: "all" | "without";
   q: string;
 };
 
 function buildSearchParams(params: {
   status: string;
   plan: string;
-  onboarding: "all" | "with";
-  routines: "all" | "with";
+  onboarding: "all" | "with" | "without";
+  routines: "all" | "without";
+  nutrition: "all" | "without";
   q: string;
 }) {
   const nextParams = new URLSearchParams();
@@ -31,9 +35,16 @@ function buildSearchParams(params: {
   if (params.onboarding === "with") {
     nextParams.set("onboarding", "with");
   }
+  if (params.onboarding === "without") {
+    nextParams.set("onboarding", "without");
+  }
 
-  if (params.routines === "with") {
-    nextParams.set("routines", "with");
+  if (params.routines === "without") {
+    nextParams.set("routines", "without");
+  }
+
+  if (params.nutrition === "without") {
+    nextParams.set("nutrition", "without");
   }
 
   const normalizedQuery = params.q.trim();
@@ -79,15 +90,18 @@ export function AdminSubscribersFilters({
   plan: initialPlan,
   onboarding: initialOnboarding,
   routines: initialRoutines,
+  nutrition: initialNutrition,
   q: initialQuery
 }: AdminSubscribersFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
 
   const [status, setStatus] = useState(initialStatus);
   const [plan, setPlan] = useState(initialPlan);
-  const [onboarding, setOnboarding] = useState<"all" | "with">(initialOnboarding);
-  const [routines, setRoutines] = useState<"all" | "with">(initialRoutines);
+  const [onboarding, setOnboarding] = useState<"all" | "with" | "without">(initialOnboarding);
+  const [routines, setRoutines] = useState<"all" | "without">(initialRoutines);
+  const [nutrition, setNutrition] = useState<"all" | "without">(initialNutrition);
   const [q, setQ] = useState(initialQuery);
 
   const applyFilters = (nextState?: Partial<AdminSubscribersFiltersProps>) => {
@@ -96,15 +110,30 @@ export function AdminSubscribersFilters({
       plan: nextState?.plan ?? plan,
       onboarding: nextState?.onboarding ?? onboarding,
       routines: nextState?.routines ?? routines,
+      nutrition: nextState?.nutrition ?? nutrition,
       q: nextState?.q ?? q
     });
 
-    router.push(search ? `${pathname}?${search}` : pathname);
+    startTransition(() => {
+      router.push(search ? `${pathname}?${search}` : pathname);
+    });
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     applyFilters();
+  };
+
+  const clearFilters = () => {
+    setStatus("all");
+    setPlan("all");
+    setOnboarding("all");
+    setRoutines("all");
+    setNutrition("all");
+    setQ("");
+    startTransition(() => {
+      router.push(pathname);
+    });
   };
 
   return (
@@ -142,10 +171,10 @@ export function AdminSubscribersFilters({
       <div className="block text-sm">
         <span className="text-muted mb-2 block text-xs">Formulario</span>
         <ToggleFilter
-          checked={onboarding === "with"}
-          label="Solo con formulario"
+          checked={onboarding === "without"}
+          label="Formulario pendiente"
           onToggle={() => {
-            const nextValue = onboarding === "with" ? "all" : "with";
+            const nextValue = onboarding === "without" ? "all" : "without";
             setOnboarding(nextValue);
           }}
         />
@@ -154,11 +183,23 @@ export function AdminSubscribersFilters({
       <div className="block text-sm">
         <span className="text-muted mb-2 block text-xs">Rutinas</span>
         <ToggleFilter
-          checked={routines === "with"}
-          label="Solo con rutinas"
+          checked={routines === "without"}
+          label="Rutina pendiente"
           onToggle={() => {
-            const nextValue = routines === "with" ? "all" : "with";
+            const nextValue = routines === "without" ? "all" : "without";
             setRoutines(nextValue);
+          }}
+        />
+      </div>
+
+      <div className="block text-sm">
+        <span className="text-muted mb-2 block text-xs">Alimentacion</span>
+        <ToggleFilter
+          checked={nutrition === "without"}
+          label="Alimentacion pendiente"
+          onToggle={() => {
+            const nextValue = nutrition === "without" ? "all" : "without";
+            setNutrition(nextValue);
           }}
         />
       </div>
@@ -175,9 +216,12 @@ export function AdminSubscribersFilters({
         />
       </label>
 
-      <div className="sm:col-span-5">
-        <button type="submit" className="btn-primary inline-block">
+      <div className="flex flex-wrap gap-3 sm:col-span-5">
+        <LoadingButton type="submit" className="btn-primary inline-flex items-center justify-center gap-2" isLoading={isPending}>
           Apply filters
+        </LoadingButton>
+        <button type="button" className="btn-secondary inline-flex items-center justify-center" onClick={clearFilters} disabled={isPending}>
+          Limpiar filtros
         </button>
       </div>
     </form>

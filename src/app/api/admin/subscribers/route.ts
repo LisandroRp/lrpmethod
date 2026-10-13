@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
   const plan = request.nextUrl.searchParams.get("plan") ?? "all";
   const onboarding = request.nextUrl.searchParams.get("onboarding") ?? "all";
   const routines = request.nextUrl.searchParams.get("routines") ?? "all";
+  const nutrition = request.nextUrl.searchParams.get("nutrition") ?? "all";
   const q = request.nextUrl.searchParams.get("q") ?? "";
 
   const rows = await listSubscribers({
@@ -25,6 +26,7 @@ export async function GET(request: NextRequest) {
     plan: plan as "all" | "basic" | "intermediate" | "premium",
     onboarding: onboarding as "all" | "with" | "without",
     routines: routines as "all" | "with" | "without",
+    nutrition: nutrition as "all" | "with" | "without",
     q
   });
 

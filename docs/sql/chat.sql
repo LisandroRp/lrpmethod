@@ -148,18 +148,23 @@ begin
 end;
 $$;
 
-create or replace function public.chat_list_conversations()
+-- The added plan_code column changes the return type, so PostgreSQL requires
+-- dropping the old signature before recreating it. Keep this in the transaction.
+drop function if exists public.chat_list_conversations();
+
+create function public.chat_list_conversations()
 returns table (
   customer_id uuid,
   full_name text,
   email text,
+  plan_code text,
   last_message text,
   last_message_at timestamptz,
   last_sender_kind text
 )
 language sql security definer set search_path = public, pg_temp
 as $$
-  select latest.customer_id, p.full_name, p.email, latest.body,
+  select latest.customer_id, p.full_name, p.email, active_subscription.plan_code, latest.body,
     latest.created_at, latest.sender_kind
   from (
     select distinct on (m.customer_id)
@@ -168,6 +173,13 @@ as $$
     order by m.customer_id, m.id desc
   ) latest
   left join public.profiles p on p.id = latest.customer_id
+  left join lateral (
+    select s.plan_code
+    from public.subscriptions s
+    where s.user_id = latest.customer_id and s.status = 'active'
+    order by s.created_at desc
+    limit 1
+  ) active_subscription on true
   order by latest.id desc;
 $$;
 

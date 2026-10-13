@@ -285,7 +285,7 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
   const [frontPreviewUrl, setFrontPreviewUrl] = useState<string | null>(null);
   const [sidePreviewUrl, setSidePreviewUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const [savingMode, setSavingMode] = useState<"draft" | "submit" | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<OnboardingFieldKey, string>>>({});
@@ -421,7 +421,7 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
     setFieldErrors({});
     setValidationErrors([]);
     setIsValidationModalOpen(false);
-    setIsSaving(true);
+    setSavingMode(mode);
     try {
       const formData = new FormData();
       formData.append("mode", mode === "submit" ? "submit" : "draft");
@@ -452,7 +452,7 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
 
       setMessage("Borrador guardado.");
     } finally {
-      setIsSaving(false);
+      setSavingMode(null);
     }
   }
 
@@ -877,11 +877,11 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
 
       {!isSubmitted ? (
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <LoadingButton type="button" className="btn-secondary" disabled={isLoading} isLoading={isSaving} onClick={() => void save("draft")}>
-            {isSaving ? "Guardando..." : "Guardar borrador"}
+          <LoadingButton type="button" className="btn-secondary" disabled={isLoading || savingMode !== null} isLoading={savingMode === "draft"} onClick={() => void save("draft")}>
+            Guardar borrador
           </LoadingButton>
-          <LoadingButton type="button" className="btn-primary" disabled={isLoading} isLoading={isSaving} onClick={() => void save("submit")}>
-            {isSaving ? "Enviando..." : "Enviar formulario"}
+          <LoadingButton type="button" className="btn-primary" disabled={isLoading || savingMode !== null} isLoading={savingMode === "submit"} onClick={() => void save("submit")}>
+            Enviar formulario
           </LoadingButton>
         </div>
       ) : null}

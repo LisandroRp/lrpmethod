@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { TbRefresh } from "react-icons/tb";
 
+import { LoadingButton } from "@/components/composed/LoadingButton";
 import type { AppLocale } from "@/features/landing/i18n/types";
+import { ChatMessageCard } from "@/features/chat/components/ChatMessageCard";
+import { ChatRefreshButton } from "@/features/chat/components/ChatRefreshButton";
 import { getChatCopy } from "@/features/chat/i18n";
 import { CHAT_MESSAGE_LIMIT } from "@/lib/chat/chat-policy";
 import type { ChatMessage, ChatStatus } from "@/lib/server/chat-admin";
@@ -161,15 +162,13 @@ export function ChatThread({ endpoint, locale, isAdmin, routineId = null }: Chat
           ) : null}
           {!status && hasLoaded ? <p className="text-muted text-sm">{copy.planRequired}</p> : null}
         </div>
-        <button type="button" className="btn-secondary inline-flex items-center gap-2 text-sm" onClick={() => void refresh()} disabled={isRefreshing}>
-          <TbRefresh className="h-4 w-4" aria-hidden="true" /> {copy.refresh}
-        </button>
+        <ChatRefreshButton label={copy.refresh} isRefreshing={isRefreshing} onRefresh={() => void refresh()} />
       </div>
 
       {hasMore ? (
-        <button type="button" className="text-accent mt-4 text-sm hover:underline" onClick={() => void loadOlder()} disabled={isLoadingOlder}>
+        <LoadingButton type="button" className="text-accent mt-4 text-sm hover:underline" onClick={() => void loadOlder()} isLoading={isLoadingOlder}>
           {copy.loadOlder}
-        </button>
+        </LoadingButton>
       ) : null}
 
       <div
@@ -182,25 +181,15 @@ export function ChatThread({ endpoint, locale, isAdmin, routineId = null }: Chat
           shouldStickToBottom.current = list.scrollHeight - list.scrollTop - list.clientHeight < 100;
         }}
       >
-        {!hasLoaded && isRefreshing ? <p className="text-muted text-sm">{copy.loading}</p> : null}
+        {!hasLoaded && isRefreshing ? (
+          <div className="flex min-h-48 items-center justify-center" aria-label={copy.loading} role="status">
+            <span className="border-subtle h-8 w-8 animate-spin rounded-full border-4" aria-hidden="true" />
+          </div>
+        ) : null}
         {hasLoaded && messages.length === 0 ? <p className="text-muted text-sm">{isAdmin ? copy.emptyAdminChat : copy.emptyChat}</p> : null}
-        {messages.map((message) => {
-          const isMine = isAdmin ? message.senderKind === "admin" : message.senderKind === "customer";
-          return (
-            <article key={message.id} className={`border-subtle max-w-[90%] rounded-xl border p-3 sm:max-w-[78%] ${isMine ? "bg-surface ml-auto" : "bg-canvas"}`}>
-              <div className="text-muted flex items-center justify-between gap-3 text-xs">
-                <span>{message.senderKind === "admin" ? copy.teamName : isAdmin ? copy.student : copy.you}</span>
-                <time dateTime={message.createdAt}>{new Date(message.createdAt).toLocaleString(dateLocale, { dateStyle: "short", timeStyle: "short" })}</time>
-              </div>
-              <p className="text-primary mt-2 whitespace-pre-wrap break-words text-sm">{message.body}</p>
-              {message.routineId ? (
-                <Link className="text-accent mt-2 inline-block text-xs hover:underline" href={`/my-plan/${message.routineId}`}>
-                  {copy.routineLink} #{message.routineId}
-                </Link>
-              ) : null}
-            </article>
-          );
-        })}
+        {messages.map((message) => (
+          <ChatMessageCard key={message.id} message={message} locale={locale} isAdmin={isAdmin} />
+        ))}
       </div>
 
       {error ? <p role="alert" className="text-accent mt-4 text-sm">{error}</p> : null}
@@ -221,7 +210,7 @@ export function ChatThread({ endpoint, locale, isAdmin, routineId = null }: Chat
           />
           <div className="flex items-center justify-between gap-3">
             <span className="text-muted text-xs">{draft.length}/{CHAT_MESSAGE_LIMIT}</span>
-            <button type="submit" className="btn-primary" disabled={isSending || !draft.trim()}>{isSending ? copy.sending : copy.send}</button>
+            <LoadingButton type="submit" className="btn-primary" disabled={!draft.trim()} isLoading={isSending}>{copy.send}</LoadingButton>
           </div>
         </form>
       ) : null}
