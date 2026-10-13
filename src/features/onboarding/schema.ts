@@ -26,6 +26,8 @@ export const onboardingAnswersSchema = z
   email: z.string().email().max(200),
   whatsapp: z.string().min(6).max(40),
   age: z.number().int().min(12).max(99),
+  heightCm: z.number().finite().min(50).max(300),
+  weightKg: z.number().finite().min(10).max(500),
   sex: sexSchema,
   cityCountry: z.string().min(2).max(120),
   mainGoal: goalSchema,

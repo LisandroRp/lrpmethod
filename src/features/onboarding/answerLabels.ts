@@ -107,6 +107,8 @@ export const onboardingDisplaySections: DisplaySection[] = [
       { key: "email", label: "Email" },
       { key: "whatsapp", label: "WhatsApp" },
       { key: "age", label: "Edad" },
+      { key: "heightCm", label: "Altura (cm)" },
+      { key: "weightKg", label: "Peso actual (kg)" },
       { key: "sex", label: "Sexo" },
       { key: "cityCountry", label: "Ciudad y país" }
     ]

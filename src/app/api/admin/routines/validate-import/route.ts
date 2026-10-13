@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { routineImportDraftSchema } from "@/lib/routines/routine-import-schema";
+import { getRequestLocale } from "@/lib/i18n/get-request-locale";
 import { hydrateRoutineImportDraftWithExercises, isUserAdmin } from "@/lib/server/supabase-admin";
 import { getCurrentAuthenticatedUser } from "@/lib/server/supabase-auth";
 
@@ -42,7 +43,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const draft = await hydrateRoutineImportDraftWithExercises(parsedDraft.data);
+    const locale = await getRequestLocale();
+    const draft = await hydrateRoutineImportDraftWithExercises(parsedDraft.data, locale);
     return NextResponse.json({ draft });
   } catch (error) {
     return NextResponse.json(

@@ -592,7 +592,7 @@ export async function searchActiveExercisesForAdmin(query: string, locale: AppLo
   return Array.from(resultsById.values()).slice(0, safeLimit);
 }
 
-export async function hydrateRoutineImportDraftWithExercises(draft: RoutineImportDraft) {
+export async function hydrateRoutineImportDraftWithExercises(draft: RoutineImportDraft, locale: AppLocale = "en") {
   const exerciseIds = collectRoutineExerciseIds(draft);
   if (!exerciseIds.length) {
     throw new Error("La rutina no tiene ejercicios.");
@@ -605,6 +605,11 @@ export async function hydrateRoutineImportDraftWithExercises(draft: RoutineImpor
     throw new Error(`Estos exerciseId no existen o no estan activos: ${missingExerciseIds.join(", ")}.`);
   }
 
+  const translationsById = await listExerciseTranslationsByIds(exerciseIds, locale);
+  const localizedExercisesById = new Map(
+    Array.from(activeExercisesById, ([id, exercise]) => [id, applyExerciseTranslation(exercise, translationsById.get(id))])
+  );
+
   return {
     ...draft,
     routine: {
@@ -613,7 +618,7 @@ export async function hydrateRoutineImportDraftWithExercises(draft: RoutineImpor
         ...day,
         items: day.items.map((item) => {
           if (item.type === "single") {
-            const exerciseInfo = activeExercisesById.get(item.exerciseId);
+            const exerciseInfo = localizedExercisesById.get(item.exerciseId);
             return {
               ...item,
               exerciseName: exerciseInfo?.name ?? item.exerciseName,
@@ -633,7 +638,7 @@ export async function hydrateRoutineImportDraftWithExercises(draft: RoutineImpor
           return {
             ...item,
             exercises: item.exercises.map((exercise) => {
-              const exerciseInfo = activeExercisesById.get(exercise.exerciseId);
+              const exerciseInfo = localizedExercisesById.get(exercise.exerciseId);
               return {
                 ...exercise,
                 exerciseName: exerciseInfo?.name ?? exercise.exerciseName,

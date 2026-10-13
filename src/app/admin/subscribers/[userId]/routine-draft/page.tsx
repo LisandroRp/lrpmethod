@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AdminRoutineDraftEditor } from "@/features/admin/routine-import/AdminRoutineDraftEditor";
 import { LandingHeader } from "@/features/landing/components/LandingHeader";
 import { getLandingContent } from "@/features/landing/i18n/messages";
+import { getRequestLocale } from "@/lib/i18n/get-request-locale";
 import { RoutineImportDraft } from "@/lib/routines/routine-import-schema";
 import { getCurrentAuthenticatedUser } from "@/lib/server/supabase-auth";
 import { findProfileById, findRoutineTemplateDetailById, isUserAdmin } from "@/lib/server/supabase-admin";
@@ -91,7 +92,7 @@ function buildRoutineDraftFromDetail(routine: RoutineTemplateDetail): RoutineImp
 
 export default async function AdminRoutineDraftPage({ params, searchParams }: AdminRoutineDraftPageProps) {
   const content = getLandingContent("es");
-  const user = await getCurrentAuthenticatedUser();
+  const [user, locale] = await Promise.all([getCurrentAuthenticatedUser(), getRequestLocale()]);
 
   if (!user?.id) {
     redirect("/");
@@ -107,7 +108,7 @@ export default async function AdminRoutineDraftPage({ params, searchParams }: Ad
   const routineId = resolvedSearchParams?.routineId ? Number(resolvedSearchParams.routineId) : null;
   const [profile, routine] = await Promise.all([
     findProfileById(userId),
-    routineId && Number.isInteger(routineId) ? findRoutineTemplateDetailById(routineId, "es") : Promise.resolve(null)
+    routineId && Number.isInteger(routineId) ? findRoutineTemplateDetailById(routineId, locale) : Promise.resolve(null)
   ]);
   const formHref = `/admin/subscribers/${userId}/onboarding`;
   const routinesHref = `/admin/subscribers/${userId}/routines`;
@@ -135,7 +136,7 @@ export default async function AdminRoutineDraftPage({ params, searchParams }: Ad
             </div>
           </div>
 
-          <AdminRoutineDraftEditor userId={userId} formHref={formHref} locale="es" initialDraft={initialDraft} routineId={routineId ?? undefined} />
+          <AdminRoutineDraftEditor userId={userId} formHref={formHref} locale={locale} initialDraft={initialDraft} routineId={routineId ?? undefined} />
         </div>
       </main>
     </div>

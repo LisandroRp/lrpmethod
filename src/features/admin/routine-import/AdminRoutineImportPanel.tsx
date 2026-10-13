@@ -8,6 +8,7 @@ import { TbDownload, TbListDetails, TbLoader2, TbUpload } from "react-icons/tb";
 import { OnboardingAnswersInput } from "@/features/onboarding/schema";
 import { RoutineImportDraft, routineImportDraftSchema } from "@/lib/routines/routine-import-schema";
 
+import { buildNutritionPromptMarkdown, getNutritionPromptFilename } from "./nutritionPrompt";
 import { buildRoutinePromptMarkdown, getRoutinePromptFilename } from "./routinePrompt";
 
 type AdminRoutineImportPanelProps = {
@@ -38,8 +39,12 @@ export function AdminRoutineImportPanel({ userId, answers }: AdminRoutineImportP
   const [isUploadingNutrition, setIsUploadingNutrition] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const handleDownloadPrompt = () => {
+  const handleDownloadRoutinePrompt = () => {
     downloadTextFile(getRoutinePromptFilename(answers), buildRoutinePromptMarkdown(answers));
+  };
+
+  const handleDownloadNutritionPrompt = () => {
+    downloadTextFile(getNutritionPromptFilename(answers), buildNutritionPromptMarkdown(answers));
   };
 
   const handleUpload = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -129,51 +134,64 @@ export function AdminRoutineImportPanel({ userId, answers }: AdminRoutineImportP
     <section className="panel mb-6 p-5">
       <div className="space-y-4">
         <div>
-          <h2 className="text-accent text-lg font-semibold">Rutina personalizada</h2>
+          <h2 className="text-accent text-lg font-semibold">Planes personalizados</h2>
           <p className="text-muted mt-1 text-sm">
-            Descarga el prompt del formulario y subi el JSON devuelto por ChatGPT. La app valida los ejercicios contra la base antes de abrir el
-            borrador.
+            Descargá el prompt de rutina o alimentación según lo que vas a crear. Subí la rutina en JSON o el plan de alimentación en PDF.
           </p>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="grid gap-2 sm:grid-cols-3 xl:max-w-3xl">
-            <button type="button" className="btn-secondary inline-flex items-center justify-center gap-2 px-4" onClick={handleDownloadPrompt}>
-              <TbDownload className="h-5 w-5" />
-              Descargar formulario
-            </button>
-            <label className={`btn-primary relative inline-flex items-center justify-center px-4 ${isUploading ? "cursor-wait opacity-70" : "cursor-pointer"}`} aria-busy={isUploading}>
-              <span className={`inline-flex items-center gap-2 ${isUploading ? "opacity-0" : ""}`}>
-                <TbUpload className="h-5 w-5" />
-                Subir rutina
-              </span>
-              {isUploading ? (
-                <span className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                  <TbLoader2 className="h-4 w-4 animate-spin" />
-                </span>
-              ) : null}
-              <input className="hidden" type="file" accept="application/json,.json" onChange={(event) => void handleUpload(event)} disabled={isUploading} />
-            </label>
-            <label className={`btn-secondary relative inline-flex items-center justify-center px-4 ${isUploadingNutrition ? "cursor-wait opacity-70" : "cursor-pointer"}`} aria-busy={isUploadingNutrition}>
-              <span className={`inline-flex items-center gap-2 ${isUploadingNutrition ? "opacity-0" : ""}`}>
-                <TbUpload className="h-5 w-5" />
-                Subir alimentacion
-              </span>
-              {isUploadingNutrition ? (
-                <span className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                  <TbLoader2 className="h-4 w-4 animate-spin" />
-                </span>
-              ) : null}
-              <input
-                className="hidden"
-                type="file"
-                accept="application/pdf,.pdf"
-                multiple
-                onChange={(event) => void handleNutritionUpload(event)}
-                disabled={isUploadingNutrition}
-              />
-            </label>
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+          <div className="grid w-full gap-3 md:grid-cols-2 xl:max-w-3xl">
+            <div className="border-subtle rounded-xl border p-3">
+              <h3 className="text-primary text-sm font-semibold">Rutina</h3>
+              <div className="mt-3 flex flex-col gap-2">
+                <button type="button" className="btn-secondary inline-flex w-full items-center justify-center gap-2 px-4" onClick={handleDownloadRoutinePrompt}>
+                  <TbDownload className="h-5 w-5" aria-hidden="true" />
+                  Descargar prompt de rutina
+                </button>
+                <label className={`btn-primary relative inline-flex w-full items-center justify-center px-4 ${isUploading ? "cursor-wait opacity-70" : "cursor-pointer"}`} aria-busy={isUploading}>
+                  <span className={`inline-flex items-center gap-2 ${isUploading ? "opacity-0" : ""}`}>
+                    <TbUpload className="h-5 w-5" />
+                    Subir rutina
+                  </span>
+                  {isUploading ? (
+                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                      <TbLoader2 className="h-4 w-4 animate-spin" />
+                    </span>
+                  ) : null}
+                  <input className="hidden" type="file" accept="application/json,.json" onChange={(event) => void handleUpload(event)} disabled={isUploading} />
+                </label>
+              </div>
+            </div>
+            <div className="border-subtle rounded-xl border p-3">
+              <h3 className="text-primary text-sm font-semibold">Alimentación</h3>
+              <div className="mt-3 flex flex-col gap-2">
+                <button type="button" className="btn-secondary inline-flex w-full items-center justify-center gap-2 px-4" onClick={handleDownloadNutritionPrompt}>
+                  <TbDownload className="h-5 w-5" aria-hidden="true" />
+                  Descargar prompt de alimentación
+                </button>
+                <label className={`btn-primary relative inline-flex w-full items-center justify-center px-4 ${isUploadingNutrition ? "cursor-wait opacity-70" : "cursor-pointer"}`} aria-busy={isUploadingNutrition}>
+                  <span className={`inline-flex items-center gap-2 ${isUploadingNutrition ? "opacity-0" : ""}`}>
+                    <TbUpload className="h-5 w-5" />
+                    Subir alimentación
+                  </span>
+                  {isUploadingNutrition ? (
+                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                      <TbLoader2 className="h-4 w-4 animate-spin" />
+                    </span>
+                  ) : null}
+                  <input
+                    className="hidden"
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    multiple
+                    onChange={(event) => void handleNutritionUpload(event)}
+                    disabled={isUploadingNutrition}
+                  />
+                </label>
+              </div>
+            </div>
           </div>
-          <div className="ml-auto flex flex-col items-stretch gap-2 sm:min-w-60">
+          <div className="flex flex-col items-stretch gap-2 sm:flex-row xl:ml-auto xl:min-w-60 xl:flex-col">
             <Link href={`/admin/subscribers/${userId}/nutrition`} className="btn-secondary inline-flex items-center justify-center gap-2 px-4">
               <TbListDetails className="h-5 w-5" />
               Alimentacion subida

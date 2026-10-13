@@ -1,32 +1,13 @@
-import { formatOnboardingAnswerValue, onboardingDisplaySections } from "@/features/onboarding/answerLabels";
-import { OnboardingAnswersInput } from "@/features/onboarding/schema";
+import type { OnboardingAnswersInput } from "@/features/onboarding/schema";
 
-function sanitizeFilenamePart(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
-    .slice(0, 80);
-}
+import { buildPromptAnswerSections, getPromptFilename } from "./promptAnswers";
 
 export function getRoutinePromptFilename(answers: OnboardingAnswersInput) {
-  const name = sanitizeFilenamePart(answers.fullName) || "alumno";
-  return `lrp-routine-prompt-${name}.md`;
+  return getPromptFilename("routine", answers);
 }
 
 export function buildRoutinePromptMarkdown(answers: OnboardingAnswersInput) {
-  const answerSections = onboardingDisplaySections
-    .map((section) => {
-      const rows = section.fields
-        .map((field) => `- **${field.label}:** ${formatOnboardingAnswerValue(field.key, answers[field.key])}`)
-        .join("\n");
-
-      return `## ${section.title}\n${rows}`;
-    })
-    .join("\n\n");
+  const answerSections = buildPromptAnswerSections(answers);
 
   return `# Crear rutina personalizada LRP Method
 

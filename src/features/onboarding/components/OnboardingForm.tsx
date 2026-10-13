@@ -27,8 +27,10 @@ type SelectFieldKey =
   | "commuteTime"
   | "followupBestTime";
 
-type OnboardingAnswersDraftInput = Omit<OnboardingAnswersInput, SelectFieldKey> & {
-  [K in SelectFieldKey]: OnboardingAnswersInput[K] | null;
+type NullableDraftFieldKey = SelectFieldKey | "heightCm" | "weightKg";
+
+type OnboardingAnswersDraftInput = Omit<OnboardingAnswersInput, NullableDraftFieldKey> & {
+  [K in NullableDraftFieldKey]: OnboardingAnswersInput[K] | null;
 };
 
 type OnboardingFieldKey = keyof OnboardingAnswersDraftInput;
@@ -152,6 +154,8 @@ const fieldLabels: Partial<Record<OnboardingFieldKey, string>> = {
   email: "Email",
   whatsapp: "WhatsApp",
   age: "Edad",
+  heightCm: "Altura (cm)",
+  weightKg: "Peso actual (kg)",
   sex: "Sexo",
   cityCountry: "Ciudad y pais",
   mainGoal: "Objetivo principal",
@@ -250,6 +254,8 @@ const defaultAnswers = (email: string): OnboardingAnswersDraftInput => ({
   email,
   whatsapp: "",
   age: 18,
+  heightCm: null,
+  weightKg: null,
   sex: null,
   cityCountry: "",
   mainGoal: null,
@@ -307,7 +313,7 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
         }
 
         if (payload.onboarding.answers) {
-          setAnswers(payload.onboarding.answers);
+          setAnswers({ ...defaultAnswers(userEmail), ...payload.onboarding.answers });
         }
         setIsSubmitted(payload.onboarding.status === "submitted");
       } finally {
@@ -321,7 +327,7 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [userEmail]);
 
   function update<K extends keyof OnboardingAnswersDraftInput>(key: K, value: OnboardingAnswersDraftInput[K]) {
     setAnswers((current) => ({
@@ -544,6 +550,34 @@ export function OnboardingForm({ userEmail }: OnboardingFormProps) {
               disabled={disabled}
             />
             {renderFieldError("age")}
+          </label>
+          <label className={labelClass}>
+            Altura (cm) *
+            <input
+              className={inputClass}
+              type="number"
+              min={50}
+              max={300}
+              step="0.1"
+              value={answers.heightCm ?? ""}
+              onChange={(e) => update("heightCm", e.target.value === "" ? null : Number(e.target.value))}
+              disabled={disabled}
+            />
+            {renderFieldError("heightCm")}
+          </label>
+          <label className={labelClass}>
+            Peso actual (kg) *
+            <input
+              className={inputClass}
+              type="number"
+              min={10}
+              max={500}
+              step="0.1"
+              value={answers.weightKg ?? ""}
+              onChange={(e) => update("weightKg", e.target.value === "" ? null : Number(e.target.value))}
+              disabled={disabled}
+            />
+            {renderFieldError("weightKg")}
           </label>
           <label className={labelClass}>
             Sexo *
